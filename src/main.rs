@@ -1,6 +1,5 @@
 extern crate clap;
 extern crate ocl;
-extern crate yaml_rust;
 mod conf;
 use conf::*;
 use std::fs;
@@ -18,7 +17,7 @@ pub fn new(name: &str) -> ConfigResult<()> {
     fs::create_dir(root.clone())?;
     fs::create_dir(src_root.clone())?;
     write_config(
-        &root,
+        root,
         Config {
             version: VERSION.to_string(),
             deps: vec!["keyvank/cl-utils".to_string()],
