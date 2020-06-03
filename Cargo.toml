@@ -2,8 +2,11 @@
 name = "clman"
 version = "0.1.0"
 authors = ["Keyvan Kambakhsh <keyvankambakhsh@gmail.com>"]
+description = "OpenCL Package Manager"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+ocl = "0.19"
+yaml-rust = "0.4"
+clap = "2.33.1"
+thiserror = "1.0.10"
