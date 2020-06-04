@@ -4,6 +4,7 @@ mod conf;
 
 use std::fs;
 use std::path::Path;
+use walkdir::WalkDir;
 
 use clap::{App, Arg, SubCommand};
 
@@ -16,6 +17,19 @@ pub fn new(name: &str) -> conf::ConfigResult<()> {
     fs::write(src_root.join("main.cl"), include_str!("cl/main.cl"))?;
     fs::write(root.join(".gitignore"), "/packages\n")?;
     Ok(())
+}
+
+pub fn source() -> conf::ConfigResult<String> {
+    let mut src = String::new();
+    for entry in WalkDir::new("src") {
+        let entry = entry.unwrap();
+        if entry.metadata().unwrap().file_type().is_file() {
+            if entry.path().extension().unwrap().to_str().unwrap() == "cl" {
+                src.push_str(&fs::read_to_string(entry.path())?[..]);
+            }
+        }
+    }
+    Ok(src)
 }
 
 fn main() {
@@ -34,6 +48,7 @@ fn main() {
                 ),
         )
         .subcommand(SubCommand::with_name("run").about("Run the project in current directory"))
+        .subcommand(SubCommand::with_name("gen").about("Generate final OpenCL source code"))
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("new") {
@@ -43,5 +58,10 @@ fn main() {
 
     if let Some(_matches) = matches.subcommand_matches("run") {
         let _conf = conf::read_config().unwrap();
+    }
+
+    if let Some(_matches) = matches.subcommand_matches("gen") {
+        let _conf = conf::read_config().unwrap();
+        println!("{}", source().unwrap());
     }
 }
