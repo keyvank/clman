@@ -1,38 +1,27 @@
 extern crate clap;
 extern crate ocl;
 mod conf;
-use conf::*;
+
 use std::fs;
 use std::path::Path;
 
 use clap::{App, Arg, SubCommand};
 
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
-pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
-
-pub fn new(name: &str) -> ConfigResult<()> {
+pub fn new(name: &str) -> conf::ConfigResult<()> {
     let root = Path::new(name);
     let src_root = root.join("src");
     fs::create_dir(root.clone())?;
     fs::create_dir(src_root.clone())?;
-    write_config(
-        root,
-        Config {
-            version: VERSION.to_string(),
-            deps: vec!["keyvank/cl-utils".to_string()],
-            main: "main".to_string(),
-        },
-    )?;
+    conf::write_config(root, conf::default())?;
     fs::write(src_root.join("main.cl"), include_str!("cl/main.cl"))?;
     Ok(())
 }
 
 fn main() {
     let matches = App::new("Clman")
-        .version(VERSION)
-        .author(AUTHORS)
-        .about(DESCRIPTION)
+        .version(conf::VERSION)
+        .author(conf::AUTHORS)
+        .about(conf::DESCRIPTION)
         .subcommand(
             SubCommand::with_name("new")
                 .about("Create a new project")
