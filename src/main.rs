@@ -14,6 +14,7 @@ pub fn new(name: &str) -> conf::ConfigResult<()> {
     fs::create_dir(src_root.clone())?;
     conf::write_config(root, conf::default())?;
     fs::write(src_root.join("main.cl"), include_str!("cl/main.cl"))?;
+    fs::write(root.join(".gitignore"), "/packages\n")?;
     Ok(())
 }
 
