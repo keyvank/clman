@@ -71,6 +71,6 @@ pub fn default() -> Config {
             );
             dyns
         },
-        main: "main".to_string(),
+        main: "main.cl".to_string(),
     }
 }
