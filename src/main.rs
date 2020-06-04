@@ -1,5 +1,6 @@
 extern crate clap;
 extern crate ocl;
+mod cl;
 mod conf;
 
 use std::fs;
@@ -58,6 +59,7 @@ fn main() {
 
     if let Some(_matches) = matches.subcommand_matches("run") {
         let _conf = conf::read_config().unwrap();
+        cl::run(source().unwrap()).unwrap();
     }
 
     if let Some(_matches) = matches.subcommand_matches("gen") {
