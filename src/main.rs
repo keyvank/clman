@@ -1,7 +1,9 @@
 extern crate clap;
+extern crate git2;
 extern crate ocl;
 mod cl;
 mod conf;
+mod git;
 
 use std::fs;
 use std::path::Path;
@@ -33,6 +35,12 @@ pub fn source() -> conf::ConfigResult<String> {
     Ok(src)
 }
 
+pub fn fetch(config: conf::Config) {
+    for (_, dep) in config.deps {
+        git::clone(&dep.git[..]);
+    }
+}
+
 fn main() {
     let matches = App::new("Clman")
         .version(conf::VERSION)
@@ -50,6 +58,7 @@ fn main() {
         )
         .subcommand(SubCommand::with_name("run").about("Run the project in current directory"))
         .subcommand(SubCommand::with_name("gen").about("Generate final OpenCL source code"))
+        .subcommand(SubCommand::with_name("fetch").about("Fetch git dependencies"))
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("new") {
@@ -65,5 +74,10 @@ fn main() {
     if let Some(_matches) = matches.subcommand_matches("gen") {
         let _conf = conf::read_config().unwrap();
         println!("{}", source().unwrap());
+    }
+
+    if let Some(_matches) = matches.subcommand_matches("fetch") {
+        let conf = conf::read_config().unwrap();
+        fetch(conf);
     }
 }

@@ -52,10 +52,10 @@ pub fn default() -> Config {
         deps: {
             let mut deps = HashMap::<String, Dependency>::new();
             deps.insert(
-                "core".to_string(),
+                "ff".to_string(),
                 Dependency {
-                    git: "keyvank/cl-utils".to_string(),
-                    args: "--open-cl".to_string(),
+                    git: "keyvank/ff-cl-gen".to_string(),
+                    args: "Fp 52435875175126190479447740508185965837690552500527637822603658699938581184513".to_string(),
                 },
             );
             deps
@@ -63,10 +63,10 @@ pub fn default() -> Config {
         dyns: {
             let mut dyns = HashMap::<String, Dynamic>::new();
             dyns.insert(
-                "utils.cl".to_string(),
+                "gen.cl".to_string(),
                 Dynamic {
-                    dockerfile: "Dockerfile.clman".to_string(),
-                    args: "--limbs 32".to_string(),
+                    dockerfile: "gen.Dockerfile".to_string(),
+                    args: "".to_string(),
                 },
             );
             dyns
