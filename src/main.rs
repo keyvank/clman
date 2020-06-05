@@ -3,6 +3,7 @@ extern crate git2;
 extern crate ocl;
 mod cl;
 mod conf;
+mod docker;
 mod git;
 
 use std::fs;
@@ -22,8 +23,13 @@ pub fn new(name: &str) -> conf::ConfigResult<()> {
     Ok(())
 }
 
-pub fn source() -> conf::ConfigResult<String> {
+pub fn source(conf: conf::Config) -> conf::ConfigResult<String> {
     let mut src = String::new();
+    if let Some(dyns) = conf.dyns {
+        for (_, gen) in dyns {
+            src.push_str(&docker::gen(gen.dockerfile, gen.args)[..]);
+        }
+    }
     for entry in WalkDir::new("src") {
         let entry = entry.unwrap();
         if entry.metadata().unwrap().file_type().is_file() {
@@ -69,13 +75,13 @@ fn main() {
     }
 
     if let Some(_matches) = matches.subcommand_matches("run") {
-        let _conf = conf::read_config().unwrap();
-        cl::run(source().unwrap()).unwrap();
+        let conf = conf::read_config().unwrap();
+        cl::run(source(conf).unwrap()).unwrap();
     }
 
     if let Some(_matches) = matches.subcommand_matches("gen") {
-        let _conf = conf::read_config().unwrap();
-        println!("{}", source().unwrap());
+        let conf = conf::read_config().unwrap();
+        println!("{}", source(conf).unwrap());
     }
 
     if let Some(_matches) = matches.subcommand_matches("fetch") {
