@@ -36,8 +36,10 @@ pub fn source() -> conf::ConfigResult<String> {
 }
 
 pub fn fetch(config: conf::Config) {
-    for (_, dep) in config.deps {
-        git::clone(&dep.git[..]);
+    if let Some(deps) = config.deps {
+        for (_, dep) in deps {
+            git::clone(&dep.git[..]);
+        }
     }
 }
 

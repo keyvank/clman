@@ -31,9 +31,9 @@ pub struct Dynamic {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     pub version: String,
-    pub deps: HashMap<String, Dependency>,
-    pub dyns: HashMap<String, Dynamic>,
-    pub main: String,
+    pub deps: Option<HashMap<String, Dependency>>,
+    pub dyns: Option<HashMap<String, Dynamic>>,
+    pub main: Option<String>,
 }
 
 pub fn write_config(root: &Path, conf: Config) -> ConfigResult<()> {
@@ -49,7 +49,7 @@ pub fn read_config() -> ConfigResult<Config> {
 pub fn default() -> Config {
     Config {
         version: VERSION.to_string(),
-        deps: {
+        deps: Some({
             let mut deps = HashMap::<String, Dependency>::new();
             deps.insert(
                 "ff".to_string(),
@@ -59,18 +59,8 @@ pub fn default() -> Config {
                 },
             );
             deps
-        },
-        dyns: {
-            let mut dyns = HashMap::<String, Dynamic>::new();
-            dyns.insert(
-                "gen.cl".to_string(),
-                Dynamic {
-                    dockerfile: "gen.Dockerfile".to_string(),
-                    args: "".to_string(),
-                },
-            );
-            dyns
-        },
-        main: "main.cl".to_string(),
+        }),
+        dyns: None,
+        main: Some("main.cl".to_string()),
     }
 }
