@@ -27,20 +27,10 @@ pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
     let root_args = root_args.split(" ").collect::<Vec<_>>();
     let conf = conf::read_config(root).unwrap();
     let mut ret = String::new();
-    if let Some(deps) = conf.deps {
-        for (_, dep) in deps {
+    if let Some(srcs) = conf.src {
+        for (name, src) in srcs {
             ret.push_str(
-                &source(
-                    &root.join("packages").join(dep.name()),
-                    dep.args.to_string(),
-                )?[..],
-            );
-        }
-    }
-    if let Some(src) = conf.src {
-        for (name, source) in src {
-            ret.push_str(
-                &match source {
+                &match src {
                     conf::Source::File { path } => {
                         fs::read_to_string(&root.join(Path::new(&path)))?
                     }
@@ -52,6 +42,10 @@ pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
                         }
                         docker::gen(root, dockerfile, subs)
                     }
+                    conf::Source::Package { git, args } => source(
+                        &root.join("packages").join(git),
+                        args.unwrap_or(String::new()),
+                    )?,
                 }[..],
             );
         }
@@ -61,10 +55,12 @@ pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
 
 pub fn fetch(root: &Path) {
     let conf = conf::read_config(root).unwrap();
-    if let Some(deps) = conf.deps {
-        for (_, dep) in deps {
-            println!("Fetching {}...", dep.git);
-            git::clone(&root.join("packages"), &dep);
+    if let Some(src) = conf.src {
+        for (_, source) in src {
+            if let conf::Source::Package { git, args: _ } = source {
+                println!("Fetching {}...", git);
+                git::clone(&root.join("packages"), git);
+            }
         }
     }
 }

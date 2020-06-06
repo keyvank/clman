@@ -17,20 +17,6 @@ pub enum ConfigError {
 pub type ConfigResult<T> = std::result::Result<T, ConfigError>;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Dependency {
-    pub git: String,
-    pub args: String,
-}
-
-impl Dependency {
-    pub fn name(&self) -> String {
-        let repo: Vec<&str> = self.git.split("/").collect();
-        assert_eq!(repo.len(), 2);
-        repo[1].to_string()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Source {
     File {
@@ -40,12 +26,15 @@ pub enum Source {
         dockerfile: String,
         args: Option<String>,
     },
+    Package {
+        git: String,
+        args: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     pub version: String,
-    pub deps: Option<HashMap<String, Dependency>>,
     pub src: Option<HashMap<String, Source>>,
 }
 
@@ -62,19 +51,15 @@ pub fn read_config(root: &Path) -> ConfigResult<Config> {
 pub fn default() -> Config {
     Config {
         version: VERSION.to_string(),
-        deps: Some({
-            let mut deps = HashMap::<String, Dependency>::new();
-            deps.insert(
-                "ff".to_string(),
-                Dependency {
-                    git: "keyvank/ff-cl-gen".to_string(),
-                    args: "Fp 52435875175126190479447740508185965837690552500527637822603658699938581184513".to_string(),
-                },
-            );
-            deps
-        }),
         src: Some({
             let mut src = HashMap::<String, Source>::new();
+            src.insert(
+                "ff.cl".to_string(),
+                Source::Package {
+                    git: "keyvank/ff-cl-gen".to_string(),
+                    args: Some("Fp 52435875175126190479447740508185965837690552500527637822603658699938581184513".to_string()),
+                },
+            );
             src.insert(
                 "main.cl".to_string(),
                 Source::File {
