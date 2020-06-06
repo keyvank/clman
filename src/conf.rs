@@ -22,6 +22,14 @@ pub struct Dependency {
     pub args: String,
 }
 
+impl Dependency {
+    pub fn name(&self) -> String {
+        let repo: Vec<&str> = self.git.split("/").collect();
+        assert_eq!(repo.len(), 2);
+        repo[1].to_string()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Source {
