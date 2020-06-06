@@ -13,6 +13,14 @@ use walkdir::WalkDir;
 
 use clap::{App, Arg, SubCommand};
 
+pub fn clean(root: &Path) {
+    let cache_path = root.join("clman.cache");
+
+    if Path::exists(&cache_path) {
+        fs::remove_file(cache_path).unwrap();
+    }
+}
+
 pub fn new(name: &str) -> conf::ConfigResult<()> {
     let root = Path::new(name);
     let src_root = root.join("src");
@@ -25,6 +33,12 @@ pub fn new(name: &str) -> conf::ConfigResult<()> {
 }
 
 pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
+    let cache_path = root.join("clman.cache");
+
+    if Path::exists(&cache_path) {
+        return Ok(fs::read_to_string(cache_path)?);
+    }
+
     let root_args = root_args.split(" ").collect::<Vec<_>>();
     let conf = conf::read_config(root).unwrap();
     let mut ret = String::new();
@@ -47,6 +61,8 @@ pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
             }[..],
         );
     }
+
+    fs::write(cache_path, ret.clone())?;
 
     Ok(ret)
 }
@@ -79,6 +95,7 @@ fn main() {
         .subcommand(SubCommand::with_name("run").about("Run the project in current directory"))
         .subcommand(SubCommand::with_name("gen").about("Generate final OpenCL source code"))
         .subcommand(SubCommand::with_name("fetch").about("Fetch git dependencies"))
+        .subcommand(SubCommand::with_name("clean").about("Clean cache"))
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("new") {
@@ -96,5 +113,9 @@ fn main() {
 
     if let Some(_matches) = matches.subcommand_matches("fetch") {
         fetch(Path::new("."));
+    }
+
+    if let Some(_matches) = matches.subcommand_matches("clean") {
+        clean(Path::new("."));
     }
 }
