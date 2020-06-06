@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize, Serializer};
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::Path;
 
@@ -32,10 +32,19 @@ pub enum Source {
     },
 }
 
+fn ordered_map<S>(value: &HashMap<String, Source>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let ordered: BTreeMap<_, _> = value.iter().collect();
+    ordered.serialize(serializer)
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     pub version: String,
-    pub src: Option<HashMap<String, Source>>,
+    #[serde(serialize_with = "ordered_map")]
+    pub src: HashMap<String, Source>,
 }
 
 pub fn write_config(root: &Path, conf: Config) -> ConfigResult<()> {
@@ -51,7 +60,7 @@ pub fn read_config(root: &Path) -> ConfigResult<Config> {
 pub fn default() -> Config {
     Config {
         version: VERSION.to_string(),
-        src: Some({
+        src: {
             let mut src = HashMap::<String, Source>::new();
             src.insert(
                 "ff.cl".to_string(),
@@ -67,6 +76,6 @@ pub fn default() -> Config {
                 },
             );
             src
-        }),
+        },
     }
 }

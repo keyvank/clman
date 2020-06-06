@@ -28,40 +28,35 @@ pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
     let root_args = root_args.split(" ").collect::<Vec<_>>();
     let conf = conf::read_config(root).unwrap();
     let mut ret = String::new();
-    if let Some(srcs) = conf.src {
-        for (name, src) in srcs {
-            ret.push_str(
-                &match src {
-                    conf::Source::File { path } => {
-                        fs::read_to_string(&root.join(Path::new(&path)))?
+    for (name, src) in conf.src {
+        ret.push_str(
+            &match src {
+                conf::Source::File { path } => fs::read_to_string(&root.join(Path::new(&path)))?,
+                conf::Source::Dockerfile { dockerfile, args } => {
+                    println!("Generating {}...", name);
+                    let mut subs = args.unwrap_or(String::new());
+                    for i in 0..root_args.len() {
+                        subs = subs.replace(&format!("${}", i + 1), root_args[i]);
                     }
-                    conf::Source::Dockerfile { dockerfile, args } => {
-                        println!("Generating {}...", name);
-                        let mut subs = args.unwrap_or(String::new());
-                        for i in 0..root_args.len() {
-                            subs = subs.replace(&format!("${}", i + 1), root_args[i]);
-                        }
-                        docker::gen(root, dockerfile, subs)
-                    }
-                    conf::Source::Package { git, args } => source(
-                        &root.join("packages").join(utils::repo_name(&git)),
-                        args.unwrap_or(String::new()),
-                    )?,
-                }[..],
-            );
-        }
+                    docker::gen(root, dockerfile, subs)
+                }
+                conf::Source::Package { git, args } => source(
+                    &root.join("packages").join(utils::repo_name(&git)),
+                    args.unwrap_or(String::new()),
+                )?,
+            }[..],
+        );
     }
+
     Ok(ret)
 }
 
 pub fn fetch(root: &Path) {
     let conf = conf::read_config(root).unwrap();
-    if let Some(src) = conf.src {
-        for (_, source) in src {
-            if let conf::Source::Package { git, args: _ } = source {
-                println!("Fetching {}...", git);
-                git::clone(&root.join("packages"), git);
-            }
+    for (_, source) in conf.src {
+        if let conf::Source::Package { git, args: _ } = source {
+            println!("Fetching {}...", git);
+            git::clone(&root.join("packages"), git);
         }
     }
 }
