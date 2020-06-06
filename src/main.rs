@@ -5,6 +5,7 @@ mod cl;
 mod conf;
 mod docker;
 mod git;
+mod utils;
 
 use std::fs;
 use std::path::Path;
@@ -43,7 +44,7 @@ pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
                         docker::gen(root, dockerfile, subs)
                     }
                     conf::Source::Package { git, args } => source(
-                        &root.join("packages").join(git),
+                        &root.join("packages").join(utils::repo_name(&git)),
                         args.unwrap_or(String::new()),
                     )?,
                 }[..],
