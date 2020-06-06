@@ -23,7 +23,8 @@ pub fn new(name: &str) -> conf::ConfigResult<()> {
     Ok(())
 }
 
-pub fn source(conf: conf::Config) -> conf::ConfigResult<String> {
+pub fn source(root: &Path) -> conf::ConfigResult<String> {
+    let conf = conf::read_config(root).unwrap();
     let mut ret = String::new();
     if let Some(src) = conf.src {
         for (_, source) in src {
@@ -74,17 +75,15 @@ fn main() {
     }
 
     if let Some(_matches) = matches.subcommand_matches("run") {
-        let conf = conf::read_config().unwrap();
-        cl::run(source(conf).unwrap()).unwrap();
+        cl::run(source(Path::new(".")).unwrap()).unwrap();
     }
 
     if let Some(_matches) = matches.subcommand_matches("gen") {
-        let conf = conf::read_config().unwrap();
-        println!("{}", source(conf).unwrap());
+        println!("{}", source(Path::new(".")).unwrap());
     }
 
     if let Some(_matches) = matches.subcommand_matches("fetch") {
-        let conf = conf::read_config().unwrap();
+        let conf = conf::read_config(Path::new(".")).unwrap();
         fetch(conf);
     }
 }

@@ -46,8 +46,8 @@ pub fn write_config(root: &Path, conf: Config) -> ConfigResult<()> {
     Ok(())
 }
 
-pub fn read_config() -> ConfigResult<Config> {
-    let config: Config = serde_yaml::from_str(&fs::read_to_string("clman.yaml")?)?;
+pub fn read_config(root: &Path) -> ConfigResult<Config> {
+    let config: Config = serde_yaml::from_str(&fs::read_to_string(root.join("clman.yaml"))?)?;
     Ok(config)
 }
 
