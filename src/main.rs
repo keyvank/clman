@@ -24,21 +24,20 @@ pub fn new(name: &str) -> conf::ConfigResult<()> {
 }
 
 pub fn source(conf: conf::Config) -> conf::ConfigResult<String> {
-    let mut src = String::new();
-    if let Some(dyns) = conf.dyns {
-        for (_, gen) in dyns {
-            src.push_str(&docker::gen(gen.dockerfile, gen.args)[..]);
+    let mut ret = String::new();
+    if let Some(src) = conf.src {
+        for (_, source) in src {
+            ret.push_str(
+                &match source {
+                    conf::Source::File { path } => fs::read_to_string(path)?,
+                    conf::Source::Dockerfile { dockerfile, args } => {
+                        docker::gen(dockerfile, args.unwrap_or(String::new()))
+                    }
+                }[..],
+            );
         }
     }
-    for entry in WalkDir::new("src") {
-        let entry = entry.unwrap();
-        if entry.metadata().unwrap().file_type().is_file() {
-            if entry.path().extension().unwrap().to_str().unwrap() == "cl" {
-                src.push_str(&fs::read_to_string(entry.path())?[..]);
-            }
-        }
-    }
-    Ok(src)
+    Ok(ret)
 }
 
 pub fn fetch(config: conf::Config) {

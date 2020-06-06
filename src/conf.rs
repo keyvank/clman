@@ -23,17 +23,22 @@ pub struct Dependency {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Dynamic {
-    pub dockerfile: String,
-    pub args: String,
+#[serde(untagged)]
+pub enum Source {
+    File {
+        path: String,
+    },
+    Dockerfile {
+        dockerfile: String,
+        args: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     pub version: String,
     pub deps: Option<HashMap<String, Dependency>>,
-    pub dyns: Option<HashMap<String, Dynamic>>,
-    pub main: Option<String>,
+    pub src: Option<HashMap<String, Source>>,
 }
 
 pub fn write_config(root: &Path, conf: Config) -> ConfigResult<()> {
@@ -60,7 +65,15 @@ pub fn default() -> Config {
             );
             deps
         }),
-        dyns: None,
-        main: Some("main.cl".to_string()),
+        src: Some({
+            let mut src = HashMap::<String, Source>::new();
+            src.insert(
+                "main.cl".to_string(),
+                Source::File {
+                    path: "src/main.cl".to_string(),
+                },
+            );
+            src
+        }),
     }
 }
