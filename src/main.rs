@@ -8,6 +8,7 @@ mod cl;
 mod conf;
 mod docker;
 mod git;
+mod parse;
 mod utils;
 
 use clap::{App, Arg, SubCommand};
@@ -154,6 +155,7 @@ fn main() {
         .subcommand(SubCommand::with_name("gen").about("Generate final OpenCL source code"))
         .subcommand(SubCommand::with_name("fetch").about("Fetch git dependencies"))
         .subcommand(SubCommand::with_name("clean").about("Clean cache"))
+        .subcommand(SubCommand::with_name("list").about("List available functions"))
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("new") {
@@ -175,5 +177,11 @@ fn main() {
 
     if let Some(_matches) = matches.subcommand_matches("clean") {
         clean(Path::new("."));
+    }
+
+    if let Some(_matches) = matches.subcommand_matches("list") {
+        for f in parse::list_functions(source(Path::new("."), String::new()).unwrap()) {
+            println!("{}", f);
+        }
     }
 }
