@@ -9,7 +9,6 @@ mod utils;
 
 use std::fs;
 use std::path::Path;
-use walkdir::WalkDir;
 
 use clap::{App, Arg, SubCommand};
 
