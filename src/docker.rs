@@ -1,8 +1,8 @@
-use crate::utils;
+use crate::{error, utils};
 use std::path::Path;
 use std::process::Command;
 
-pub fn gen(root: &Path, dockerfile: String, args: String) -> String {
+pub fn gen(root: &Path, dockerfile: String, args: String) -> error::ClmanResult<String> {
     let params = format!(
         "-f {} {}",
         root.join(dockerfile.clone()).to_str().unwrap().to_string(),
@@ -11,8 +11,7 @@ pub fn gen(root: &Path, dockerfile: String, args: String) -> String {
     Command::new("sh")
         .arg("-c")
         .arg(format!("sudo docker build {}", params))
-        .spawn()
-        .expect("failed to build docker image");
+        .spawn()?;
 
     utils::get_output(
         &format!(

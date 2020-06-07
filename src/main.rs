@@ -7,6 +7,7 @@ extern crate sha2;
 mod cl;
 mod conf;
 mod docker;
+mod error;
 mod git;
 mod parse;
 mod utils;
@@ -17,16 +18,16 @@ use std::fmt::Write;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub fn cache_path() -> PathBuf {
+pub fn cache_path() -> error::ClmanResult<PathBuf> {
     let path = dirs::home_dir().unwrap().join(".clman");
     if !Path::exists(&path) {
-        fs::create_dir(&path).unwrap();
+        fs::create_dir(&path)?;
     }
-    path
+    Ok(path)
 }
 
-pub fn checksum(root: &Path, root_args: String) -> String {
-    let conf = conf::read_config(root).unwrap();
+pub fn checksum(root: &Path, root_args: String) -> error::ClmanResult<String> {
+    let conf = conf::read_config(root)?;
     let mut hasher = Sha256::new();
     hasher.input(root_args.as_bytes());
 
@@ -35,18 +36,18 @@ pub fn checksum(root: &Path, root_args: String) -> String {
         match src {
             conf::Source::File { path } => {
                 hasher.input(path.as_bytes());
-                hasher.input(fs::read(root.join(path)).unwrap());
+                hasher.input(fs::read(root.join(path))?);
             }
             conf::Source::Dockerfile { dockerfile, args } => {
                 hasher.input(dockerfile.as_bytes());
-                hasher.input(fs::read(root.join(dockerfile)).unwrap());
+                hasher.input(fs::read(root.join(dockerfile))?);
                 if let Some(args) = args {
                     hasher.input(args.as_bytes());
                 }
             }
             conf::Source::Script { script, args } => {
                 hasher.input(script.as_bytes());
-                hasher.input(fs::read(root.join(script)).unwrap());
+                hasher.input(fs::read(root.join(script))?);
                 if let Some(args) = args {
                     hasher.input(args.as_bytes());
                 }
@@ -65,12 +66,12 @@ pub fn checksum(root: &Path, root_args: String) -> String {
         write!(&mut s, "{:x}", byte).unwrap();
     }
 
-    s
+    Ok(s)
 }
 
 pub fn clean(_root: &Path) {}
 
-pub fn new(name: &str) -> conf::ConfigResult<()> {
+pub fn new(name: &str) -> error::ClmanResult<()> {
     let root = Path::new(name);
     let src_root = root.join("src");
     fs::create_dir(root.clone())?;
@@ -81,15 +82,15 @@ pub fn new(name: &str) -> conf::ConfigResult<()> {
     Ok(())
 }
 
-pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
-    let cache_path = cache_path().join(checksum(root, root_args.clone()) + ".cl");
+pub fn source(root: &Path, root_args: String) -> error::ClmanResult<String> {
+    let cache_path = cache_path()?.join(checksum(root, root_args.clone())? + ".cl");
 
     if Path::exists(&cache_path) {
         return Ok(fs::read_to_string(cache_path)?);
     }
 
     let root_args = root_args.split(" ").collect::<Vec<_>>();
-    let conf = conf::read_config(root).unwrap();
+    let conf = conf::read_config(root)?;
     let mut ret = String::new();
     for (name, src) in conf.src {
         ret.push_str(
@@ -101,7 +102,7 @@ pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
                     for i in 0..root_args.len() {
                         subs = subs.replace(&format!("${}", i + 1), root_args[i]);
                     }
-                    docker::gen(root, dockerfile, subs)
+                    docker::gen(root, dockerfile, subs)?
                 }
                 conf::Source::Script { script, args } => {
                     println!("Generating {}...", name);
@@ -111,7 +112,7 @@ pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
                     }
                     utils::get_output(
                         &(root.join(script).to_str().unwrap().to_string() + " " + &subs[..]),
-                    )
+                    )?
                 }
                 conf::Source::Package { git, args } => source(
                     &root.join("packages").join(utils::repo_name(&git)),
@@ -126,14 +127,15 @@ pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
     Ok(ret)
 }
 
-pub fn fetch(root: &Path) {
-    let conf = conf::read_config(root).unwrap();
+pub fn fetch(root: &Path) -> error::ClmanResult<()> {
+    let conf = conf::read_config(root)?;
     for (_, source) in conf.src {
         if let conf::Source::Package { git, args: _ } = source {
             println!("Fetching {}...", git);
-            git::clone(&root.join("packages"), git);
+            git::clone(&root.join("packages"), git)?;
         }
     }
+    Ok(())
 }
 
 fn main() {
@@ -172,7 +174,7 @@ fn main() {
     }
 
     if let Some(_matches) = matches.subcommand_matches("fetch") {
-        fetch(Path::new("."));
+        fetch(Path::new(".")).unwrap();
     }
 
     if let Some(_matches) = matches.subcommand_matches("clean") {

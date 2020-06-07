@@ -1,3 +1,4 @@
+use crate::error;
 use std::process::Command;
 
 pub fn repo_name(repo: &String) -> String {
@@ -6,15 +7,10 @@ pub fn repo_name(repo: &String) -> String {
     repo[1].to_string()
 }
 
-pub fn get_output(cmd: &String) -> String {
-    std::str::from_utf8(
-        &Command::new("sh")
-            .arg("-c")
-            .arg(cmd)
-            .output()
-            .expect("failed to execute process")
-            .stdout[..],
+pub fn get_output(cmd: &String) -> error::ClmanResult<String> {
+    Ok(
+        std::str::from_utf8(&Command::new("sh").arg("-c").arg(cmd).output()?.stdout[..])
+            .unwrap()
+            .to_string(),
     )
-    .unwrap()
-    .to_string()
 }
