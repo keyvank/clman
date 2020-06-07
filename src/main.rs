@@ -54,6 +54,16 @@ pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
                     }
                     docker::gen(root, dockerfile, subs)
                 }
+                conf::Source::Script { script, args } => {
+                    println!("Generating {}...", name);
+                    let mut subs = args.unwrap_or(String::new());
+                    for i in 0..root_args.len() {
+                        subs = subs.replace(&format!("${}", i + 1), root_args[i]);
+                    }
+                    utils::get_output(
+                        &(root.join(script).to_str().unwrap().to_string() + " " + &subs[..]),
+                    )
+                }
                 conf::Source::Package { git, args } => source(
                     &root.join("packages").join(utils::repo_name(&git)),
                     args.unwrap_or(String::new()),

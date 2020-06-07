@@ -1,3 +1,4 @@
+use crate::utils;
 use std::path::Path;
 use std::process::Command;
 
@@ -13,17 +14,11 @@ pub fn gen(root: &Path, dockerfile: String, args: String) -> String {
         .spawn()
         .expect("failed to build docker image");
 
-    std::str::from_utf8(
-        &Command::new("sh")
-            .arg("-c")
-            .arg(format!(
-                "sudo docker run --rm $(sudo docker build -q {}) {}",
-                params, args
-            ))
-            .output()
-            .expect("failed to execute process")
-            .stdout[..],
+    utils::get_output(
+        &format!(
+            "sudo docker run --rm $(sudo docker build -q {}) {}",
+            params, args
+        )
+        .to_string(),
     )
-    .unwrap()
-    .to_string()
 }

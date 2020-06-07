@@ -26,6 +26,10 @@ pub enum Source {
         dockerfile: String,
         args: Option<String>,
     },
+    Script {
+        script: String,
+        args: Option<String>,
+    },
     Package {
         git: String,
         args: Option<String>,
