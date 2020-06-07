@@ -1,24 +1,73 @@
 extern crate clap;
+extern crate dirs;
 extern crate git2;
 extern crate ocl;
+extern crate sha2;
+
 mod cl;
 mod conf;
 mod docker;
 mod git;
 mod utils;
 
-use std::fs;
-use std::path::Path;
-
 use clap::{App, Arg, SubCommand};
+use sha2::{Digest, Sha256};
+use std::fmt::Write;
+use std::fs;
+use std::path::{Path, PathBuf};
 
-pub fn clean(root: &Path) {
-    let cache_path = root.join("clman.cache");
-
-    if Path::exists(&cache_path) {
-        fs::remove_file(cache_path).unwrap();
+pub fn cache_path() -> PathBuf {
+    let path = dirs::home_dir().unwrap().join(".clman");
+    if !Path::exists(&path) {
+        fs::create_dir(&path).unwrap();
     }
+    path
 }
+
+pub fn checksum(root: &Path, root_args: String) -> String {
+    let conf = conf::read_config(root).unwrap();
+    let mut hasher = Sha256::new();
+    hasher.input(root_args.as_bytes());
+
+    for (name, src) in conf.src {
+        hasher.input(name.as_bytes());
+        match src {
+            conf::Source::File { path } => {
+                hasher.input(path.as_bytes());
+                hasher.input(fs::read(root.join(path)).unwrap());
+            }
+            conf::Source::Dockerfile { dockerfile, args } => {
+                hasher.input(dockerfile.as_bytes());
+                hasher.input(fs::read(root.join(dockerfile)).unwrap());
+                if let Some(args) = args {
+                    hasher.input(args.as_bytes());
+                }
+            }
+            conf::Source::Script { script, args } => {
+                hasher.input(script.as_bytes());
+                hasher.input(fs::read(root.join(script)).unwrap());
+                if let Some(args) = args {
+                    hasher.input(args.as_bytes());
+                }
+            }
+            conf::Source::Package { git, args } => {
+                hasher.input(git.as_bytes());
+                if let Some(args) = args {
+                    hasher.input(args.as_bytes());
+                }
+            }
+        }
+    }
+
+    let mut s = String::new();
+    for &byte in hasher.result()[..].iter() {
+        write!(&mut s, "{:x}", byte).unwrap();
+    }
+
+    s
+}
+
+pub fn clean(_root: &Path) {}
 
 pub fn new(name: &str) -> conf::ConfigResult<()> {
     let root = Path::new(name);
@@ -27,12 +76,12 @@ pub fn new(name: &str) -> conf::ConfigResult<()> {
     fs::create_dir(src_root.clone())?;
     conf::write_config(root, conf::default())?;
     fs::write(src_root.join("main.cl"), include_str!("cl/main.cl"))?;
-    fs::write(root.join(".gitignore"), "/packages\nclman.cache\n")?;
+    fs::write(root.join(".gitignore"), "/packages\n")?;
     Ok(())
 }
 
 pub fn source(root: &Path, root_args: String) -> conf::ConfigResult<String> {
-    let cache_path = root.join("clman.cache");
+    let cache_path = cache_path().join(checksum(root, root_args.clone()) + ".cl");
 
     if Path::exists(&cache_path) {
         return Ok(fs::read_to_string(cache_path)?);
