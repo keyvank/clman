@@ -6,5 +6,7 @@ pub enum ClmanError {
     Yaml(#[from] serde_yaml::Error),
     #[error("Git Error: {0}")]
     Git(#[from] git2::Error),
+    #[error("Command Error: {stderr:?}")]
+    Command { stderr: String },
 }
 pub type ClmanResult<T> = std::result::Result<T, ClmanError>;
