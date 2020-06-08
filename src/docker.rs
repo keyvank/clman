@@ -5,8 +5,8 @@ use std::process::Command;
 pub fn gen(root: &Path, dockerfile: String, args: String) -> error::ClmanResult<String> {
     let params = format!(
         "-f {} {}",
-        root.join(dockerfile.clone()).to_str().unwrap().to_string(),
-        root.to_str().unwrap().to_string()
+        root.join(dockerfile.clone()).display().to_string(),
+        root.display().to_string()
     );
     Command::new("sh")
         .arg("-c")
