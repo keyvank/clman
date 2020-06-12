@@ -83,6 +83,8 @@ pub fn new(name: &str) -> error::ClmanResult<()> {
 }
 
 pub fn source(root: &Path, root_args: String) -> error::ClmanResult<String> {
+    fetch(root, false)?;
+
     let cache_path = cache_path()?.join(checksum(root, root_args.clone())? + ".cl");
 
     if Path::exists(&cache_path) {
@@ -127,12 +129,11 @@ pub fn source(root: &Path, root_args: String) -> error::ClmanResult<String> {
     Ok(ret)
 }
 
-pub fn fetch(root: &Path) -> error::ClmanResult<()> {
+pub fn fetch(root: &Path, force: bool) -> error::ClmanResult<()> {
     let conf = conf::read_config(root)?;
     for (_, source) in conf.src {
         if let conf::Source::Package { git, args: _ } = source {
-            println!("Fetching {}...", git);
-            git::clone(&root.join("packages"), git)?;
+            git::clone(&root.join("packages"), git, force)?;
         }
     }
     Ok(())
@@ -174,7 +175,7 @@ fn main() {
     }
 
     if let Some(_matches) = matches.subcommand_matches("fetch") {
-        fetch(Path::new(".")).unwrap();
+        fetch(Path::new("."), true).unwrap();
     }
 
     if let Some(_matches) = matches.subcommand_matches("clean") {
