@@ -41,7 +41,7 @@ pub enum Job {
     Run { kernel: String, args: Vec<Arg> },
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum BufferType {
     #[serde(rename = "int")]
     Int,

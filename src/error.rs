@@ -8,5 +8,13 @@ pub enum ClmanError {
     Git(#[from] git2::Error),
     #[error("Command Error: {stderr:?}")]
     Command { stderr: String },
+    #[error("GPU Error: {0}")]
+    Gpu(ocl::Error),
 }
 pub type ClmanResult<T> = std::result::Result<T, ClmanError>;
+
+impl From<ocl::Error> for ClmanError {
+    fn from(err: ocl::Error) -> Self {
+        Self::Gpu(err)
+    }
+}

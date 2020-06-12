@@ -139,6 +139,13 @@ pub fn fetch(root: &Path, force: bool) -> error::ClmanResult<()> {
     Ok(())
 }
 
+pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
+    let src = source(root, root_args)?;
+    let mut gpu = cl::GPU::new(src)?;
+    gpu.run_kernel("main".to_string(), vec![])?;
+    Ok(())
+}
+
 fn main() {
     let matches = App::new("Clman")
         .version(conf::VERSION)
@@ -167,7 +174,7 @@ fn main() {
     }
 
     if let Some(_matches) = matches.subcommand_matches("run") {
-        cl::run(source(Path::new("."), String::new()).unwrap()).unwrap();
+        run(Path::new("."), String::new()).unwrap();
     }
 
     if let Some(_matches) = matches.subcommand_matches("gen") {
