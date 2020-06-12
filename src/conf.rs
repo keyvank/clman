@@ -29,6 +29,19 @@ pub enum Source {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Arg {
+    Buffer(String),
+    Number(u32),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Job {
+    #[serde(rename = "run")]
+    Run { kernel: String, args: Vec<Arg> },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum BufferType {
     #[serde(rename = "int")]
     Int,
@@ -52,6 +65,8 @@ pub struct Config {
     pub src: LinkedHashMap<String, Source>,
     #[serde(default)]
     pub buffers: LinkedHashMap<String, Buffer>,
+    #[serde(default)]
+    pub jobs: Vec<Job>,
 }
 
 pub fn write_config(root: &Path, conf: Config) -> ClmanResult<()> {
@@ -101,6 +116,14 @@ pub fn default() -> Config {
                 },
             );
             buffs
+        },
+        jobs: {
+            let mut jobs = Vec::new();
+            jobs.push(Job::Run {
+                kernel: "main".to_string(),
+                args: vec![Arg::Buffer("src_arr".to_string()), Arg::Number(23)],
+            });
+            jobs
         },
     }
 }
