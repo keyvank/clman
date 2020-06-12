@@ -29,9 +29,29 @@ pub enum Source {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum BufferType {
+    #[serde(rename = "int")]
+    Int,
+    #[serde(rename = "uint")]
+    Uint,
+    #[serde(rename = "float")]
+    Float,
+    #[serde(rename = "double")]
+    Double,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Buffer {
+    pub r#type: BufferType,
+    pub count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     pub version: String,
     pub src: LinkedHashMap<String, Source>,
+    #[serde(default)]
+    pub buffers: LinkedHashMap<String, Buffer>,
 }
 
 pub fn write_config(root: &Path, conf: Config) -> ClmanResult<()> {
@@ -63,6 +83,24 @@ pub fn default() -> Config {
                 },
             );
             src
+        },
+        buffers: {
+            let mut buffs = LinkedHashMap::<String, Buffer>::new();
+            buffs.insert(
+                "src_array".to_string(),
+                Buffer {
+                    r#type: BufferType::Uint,
+                    count: 1024,
+                },
+            );
+            buffs.insert(
+                "dst_array".to_string(),
+                Buffer {
+                    r#type: BufferType::Uint,
+                    count: 1024,
+                },
+            );
+            buffs
         },
     }
 }
