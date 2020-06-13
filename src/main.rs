@@ -14,6 +14,7 @@ mod utils;
 
 use clap::{App, Arg, SubCommand};
 use sha2::{Digest, Sha256};
+use std::collections::HashMap;
 use std::fmt::Write;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -140,9 +141,31 @@ pub fn fetch(root: &Path, force: bool) -> error::ClmanResult<()> {
 }
 
 pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
+    let conf = conf::read_config(root)?;
     let src = source(root, root_args)?;
     let mut gpu = cl::GPU::new(src)?;
-    gpu.run_kernel("main".to_string(), vec![])?;
+    let mut buffers = HashMap::<String, Box<dyn cl::GenericBuffer>>::new();
+    for (name, buff) in conf.buffers.iter() {
+        buffers.insert(name.clone(), gpu.create_buffer(buff.r#type, buff.count)?);
+    }
+    for job in conf.jobs.iter() {
+        match job {
+            conf::Job::Run { kernel, args } => {
+                let mut a = Vec::new();
+                for arg in args {
+                    match arg {
+                        conf::Arg::Buffer(name) => {
+                            a.push(cl::KernelArgument::Buffer(buffers.remove(name).unwrap()));
+                        }
+                        conf::Arg::Number(v) => {
+                            a.push(cl::KernelArgument::Uint(*v));
+                        }
+                    }
+                }
+                gpu.run_kernel(kernel.clone(), a)?;
+            }
+        }
+    }
     Ok(())
 }
 
