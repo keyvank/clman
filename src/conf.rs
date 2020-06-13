@@ -39,10 +39,10 @@ pub enum Arg {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum Job {
-    #[serde(rename = "run")]
     Run {
-        kernel: String,
+        run: String,
         args: Vec<Arg>,
         global_work_size: usize,
     },
@@ -73,7 +73,7 @@ pub struct Config {
     #[serde(default)]
     pub buffers: LinkedHashMap<String, Buffer>,
     #[serde(default)]
-    pub jobs: Vec<Job>,
+    pub jobs: LinkedHashMap<String, Job>,
 }
 
 pub fn write_config(root: &Path, conf: Config) -> ClmanResult<()> {
@@ -118,17 +118,23 @@ pub fn default() -> Config {
             buffs
         },
         jobs: {
-            let mut jobs = Vec::new();
-            jobs.push(Job::Run {
-                kernel: "fill".to_string(),
-                args: vec![Arg::Buffer("buff".to_string()), Arg::Uint(3)],
-                global_work_size: 1024,
-            });
-            jobs.push(Job::Run {
-                kernel: "sum".to_string(),
-                args: vec![Arg::Buffer("buff".to_string()), Arg::Uint(1024)],
-                global_work_size: 1,
-            });
+            let mut jobs = LinkedHashMap::<String, Job>::new();
+            jobs.insert(
+                "fill_buffer".to_string(),
+                Job::Run {
+                    run: "fill".to_string(),
+                    args: vec![Arg::Buffer("buff".to_string()), Arg::Uint(3)],
+                    global_work_size: 1024,
+                },
+            );
+            jobs.insert(
+                "calculate_sum".to_string(),
+                Job::Run {
+                    run: "sum".to_string(),
+                    args: vec![Arg::Buffer("buff".to_string()), Arg::Uint(1024)],
+                    global_work_size: 1,
+                },
+            );
             jobs
         },
     }

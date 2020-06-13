@@ -146,14 +146,14 @@ pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
     for (name, buff) in conf.buffers.iter() {
         gpu.create_buffer(name.clone(), buff.r#type, buff.count)?;
     }
-    for job in conf.jobs.iter() {
+    for (_, job) in conf.jobs.iter() {
         match job {
             conf::Job::Run {
-                kernel,
+                run,
                 args,
                 global_work_size,
             } => {
-                gpu.run_kernel(kernel.clone(), args.clone(), *global_work_size)?;
+                gpu.run_kernel(run.clone(), args.clone(), *global_work_size)?;
             }
         }
     }
