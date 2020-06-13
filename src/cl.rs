@@ -54,6 +54,28 @@ impl<T: ocl::OclPrm> TypedBuffer<T> {
     }
 }
 
+macro_rules! expand_downcast {
+    ($builder:expr, $buffer:expr, $actual_type:ty) => {{
+        $builder.arg(
+            &mut $buffer
+                .as_any_mut()
+                .downcast_mut::<TypedBuffer<$actual_type>>()
+                .unwrap()
+                .buffer,
+        );
+    }};
+}
+
+macro_rules! expand_upcast {
+    ($pro_que:expr, $actual_type:ty, $type_val: expr, $len:expr) => {{
+        Box::new(TypedBuffer::<$actual_type>::new(
+            &mut $pro_que,
+            $type_val,
+            $len,
+        )?)
+    }};
+}
+
 impl GPU {
     pub fn new(source: String) -> ocl::Result<Self> {
         Ok(GPU {
@@ -67,26 +89,10 @@ impl GPU {
         length: usize,
     ) -> ocl::Result<Box<dyn GenericBuffer>> {
         Ok(match buffer_type {
-            BufferType::Int => Box::new(TypedBuffer::<i32>::new(
-                &mut self.pro_que,
-                BufferType::Int,
-                length,
-            )?),
-            BufferType::Uint => Box::new(TypedBuffer::<u32>::new(
-                &mut self.pro_que,
-                BufferType::Uint,
-                length,
-            )?),
-            BufferType::Float => Box::new(TypedBuffer::<f32>::new(
-                &mut self.pro_que,
-                BufferType::Float,
-                length,
-            )?),
-            BufferType::Double => Box::new(TypedBuffer::<f64>::new(
-                &mut self.pro_que,
-                BufferType::Double,
-                length,
-            )?),
+            BufferType::Int => expand_upcast!(self.pro_que, i32, BufferType::Int, length),
+            BufferType::Uint => expand_upcast!(self.pro_que, u32, BufferType::Uint, length),
+            BufferType::Float => expand_upcast!(self.pro_que, f32, BufferType::Float, length),
+            BufferType::Double => expand_upcast!(self.pro_que, f64, BufferType::Double, length),
         })
     }
 
@@ -108,42 +114,10 @@ impl GPU {
                     builder.arg(*v);
                 }
                 KernelArgument::Buffer(buff) => match buff.get_type() {
-                    BufferType::Int => {
-                        builder.arg(
-                            &mut buff
-                                .as_any_mut()
-                                .downcast_mut::<TypedBuffer<i32>>()
-                                .unwrap()
-                                .buffer,
-                        );
-                    }
-                    BufferType::Uint => {
-                        builder.arg(
-                            &mut buff
-                                .as_any_mut()
-                                .downcast_mut::<TypedBuffer<u32>>()
-                                .unwrap()
-                                .buffer,
-                        );
-                    }
-                    BufferType::Float => {
-                        builder.arg(
-                            &mut buff
-                                .as_any_mut()
-                                .downcast_mut::<TypedBuffer<f32>>()
-                                .unwrap()
-                                .buffer,
-                        );
-                    }
-                    BufferType::Double => {
-                        builder.arg(
-                            &mut buff
-                                .as_any_mut()
-                                .downcast_mut::<TypedBuffer<f64>>()
-                                .unwrap()
-                                .buffer,
-                        );
-                    }
+                    BufferType::Int => expand_downcast!(builder, buff, i32),
+                    BufferType::Uint => expand_downcast!(builder, buff, u32),
+                    BufferType::Float => expand_downcast!(builder, buff, f32),
+                    BufferType::Double => expand_downcast!(builder, buff, f64),
                 },
             }
         }
