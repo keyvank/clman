@@ -41,7 +41,11 @@ pub enum Arg {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Job {
     #[serde(rename = "run")]
-    Run { kernel: String, args: Vec<Arg> },
+    Run {
+        kernel: String,
+        args: Vec<Arg>,
+        global_work_size: usize,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -125,6 +129,7 @@ pub fn default() -> Config {
             jobs.push(Job::Run {
                 kernel: "main".to_string(),
                 args: vec![Arg::Buffer("src_arr".to_string()), Arg::Uint(23)],
+                global_work_size: 1,
             });
             jobs
         },

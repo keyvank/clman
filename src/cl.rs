@@ -94,8 +94,14 @@ impl GPU {
         Ok(())
     }
 
-    pub fn run_kernel(&mut self, name: String, mut args: Vec<Arg>) -> ocl::Result<()> {
+    pub fn run_kernel(
+        &mut self,
+        name: String,
+        mut args: Vec<Arg>,
+        global_work_size: usize,
+    ) -> ocl::Result<()> {
         let mut builder = self.pro_que.kernel_builder(&name[..]);
+        builder.global_work_size([global_work_size]);
 
         for arg in args.iter_mut() {
             match arg {
