@@ -109,14 +109,7 @@ pub fn default() -> Config {
         buffers: {
             let mut buffs = LinkedHashMap::<String, Buffer>::new();
             buffs.insert(
-                "src_array".to_string(),
-                Buffer {
-                    r#type: BufferType::Uint,
-                    count: 1024,
-                },
-            );
-            buffs.insert(
-                "dst_array".to_string(),
+                "buff".to_string(),
                 Buffer {
                     r#type: BufferType::Uint,
                     count: 1024,
@@ -127,8 +120,13 @@ pub fn default() -> Config {
         jobs: {
             let mut jobs = Vec::new();
             jobs.push(Job::Run {
-                kernel: "main".to_string(),
-                args: vec![Arg::Buffer("src_arr".to_string()), Arg::Uint(23)],
+                kernel: "fill".to_string(),
+                args: vec![Arg::Buffer("buff".to_string()), Arg::Uint(3)],
+                global_work_size: 1024,
+            });
+            jobs.push(Job::Run {
+                kernel: "sum".to_string(),
+                args: vec![Arg::Buffer("buff".to_string()), Arg::Uint(1024)],
                 global_work_size: 1,
             });
             jobs
