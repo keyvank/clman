@@ -17,6 +17,14 @@ pub trait GenericBuffer {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
+pub enum KernelArgument {
+    Int(i32),
+    Uint(u32),
+    Float(f32),
+    Double(f64),
+    Buffer(Box<dyn GenericBuffer>),
+}
+
 impl<T: ocl::OclPrm> GenericBuffer for TypedBuffer<T> {
     fn get_type(&self) -> BufferType {
         self.buffer_type
@@ -82,51 +90,61 @@ impl GPU {
         })
     }
 
-    pub fn run_kernel(
-        &mut self,
-        name: String,
-        mut args: Vec<Box<dyn GenericBuffer>>,
-    ) -> ocl::Result<()> {
+    pub fn run_kernel(&mut self, name: String, mut args: Vec<KernelArgument>) -> ocl::Result<()> {
         let mut builder = self.pro_que.kernel_builder(&name[..]);
 
         for arg in args.iter_mut() {
-            match arg.get_type() {
-                BufferType::Int => {
-                    builder.arg(
-                        &mut arg
-                            .as_any_mut()
-                            .downcast_mut::<TypedBuffer<i32>>()
-                            .unwrap()
-                            .buffer,
-                    );
+            match arg {
+                KernelArgument::Int(v) => {
+                    builder.arg(*v);
                 }
-                BufferType::Uint => {
-                    builder.arg(
-                        &mut arg
-                            .as_any_mut()
-                            .downcast_mut::<TypedBuffer<u32>>()
-                            .unwrap()
-                            .buffer,
-                    );
+                KernelArgument::Uint(v) => {
+                    builder.arg(*v);
                 }
-                BufferType::Float => {
-                    builder.arg(
-                        &mut arg
-                            .as_any_mut()
-                            .downcast_mut::<TypedBuffer<f32>>()
-                            .unwrap()
-                            .buffer,
-                    );
+                KernelArgument::Float(v) => {
+                    builder.arg(*v);
                 }
-                BufferType::Double => {
-                    builder.arg(
-                        &mut arg
-                            .as_any_mut()
-                            .downcast_mut::<TypedBuffer<f64>>()
-                            .unwrap()
-                            .buffer,
-                    );
+                KernelArgument::Double(v) => {
+                    builder.arg(*v);
                 }
+                KernelArgument::Buffer(buff) => match buff.get_type() {
+                    BufferType::Int => {
+                        builder.arg(
+                            &mut buff
+                                .as_any_mut()
+                                .downcast_mut::<TypedBuffer<i32>>()
+                                .unwrap()
+                                .buffer,
+                        );
+                    }
+                    BufferType::Uint => {
+                        builder.arg(
+                            &mut buff
+                                .as_any_mut()
+                                .downcast_mut::<TypedBuffer<u32>>()
+                                .unwrap()
+                                .buffer,
+                        );
+                    }
+                    BufferType::Float => {
+                        builder.arg(
+                            &mut buff
+                                .as_any_mut()
+                                .downcast_mut::<TypedBuffer<f32>>()
+                                .unwrap()
+                                .buffer,
+                        );
+                    }
+                    BufferType::Double => {
+                        builder.arg(
+                            &mut buff
+                                .as_any_mut()
+                                .downcast_mut::<TypedBuffer<f64>>()
+                                .unwrap()
+                                .buffer,
+                        );
+                    }
+                },
             }
         }
 
