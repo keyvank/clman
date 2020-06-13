@@ -17,12 +17,12 @@ pub trait GenericBuffer {
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
-pub enum KernelArgument {
+pub enum KernelArgument<'a> {
     Int(i32),
     Uint(u32),
     Float(f32),
     Double(f64),
-    Buffer(Box<dyn GenericBuffer>),
+    Buffer(&'a Box<dyn GenericBuffer>),
 }
 
 impl<T: ocl::OclPrm> GenericBuffer for TypedBuffer<T> {
@@ -57,9 +57,9 @@ impl<T: ocl::OclPrm> TypedBuffer<T> {
 macro_rules! expand_downcast {
     ($builder:expr, $buffer:expr, $actual_type:ty) => {{
         $builder.arg(
-            &mut $buffer
-                .as_any_mut()
-                .downcast_mut::<TypedBuffer<$actual_type>>()
+            &$buffer
+                .as_any()
+                .downcast_ref::<TypedBuffer<$actual_type>>()
                 .unwrap()
                 .buffer,
         );

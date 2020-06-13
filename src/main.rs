@@ -155,7 +155,7 @@ pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
                 for arg in args {
                     match arg {
                         conf::Arg::Buffer(name) => {
-                            a.push(cl::KernelArgument::Buffer(buffers.remove(name).unwrap()));
+                            a.push(cl::KernelArgument::Buffer(buffers.get(name).unwrap()));
                         }
                         conf::Arg::Number(v) => {
                             a.push(cl::KernelArgument::Uint(*v));
