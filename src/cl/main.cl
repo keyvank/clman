@@ -1,5 +1,5 @@
 __kernel void fill(__global uint *buff, uint coeff) {
-  buff[get_global_index(0)] = get_global_index(0) * coeff;
+  buff[get_global_id(0)] = get_global_id(0) * coeff;
 }
 
 __kernel void sum(__global uint *buff, uint len) {
