@@ -32,7 +32,10 @@ pub enum Source {
 #[serde(untagged)]
 pub enum Arg {
     Buffer(String),
-    Number(u32),
+    Int(i32),
+    Uint(u32),
+    Float(f32),
+    Double(f64),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -121,7 +124,7 @@ pub fn default() -> Config {
             let mut jobs = Vec::new();
             jobs.push(Job::Run {
                 kernel: "main".to_string(),
-                args: vec![Arg::Buffer("src_arr".to_string()), Arg::Number(23)],
+                args: vec![Arg::Buffer("src_arr".to_string()), Arg::Uint(23)],
             });
             jobs
         },

@@ -1,9 +1,11 @@
-use crate::conf::BufferType;
+use crate::conf::{Arg, BufferType};
 use ocl;
 use std::any::Any;
+use std::collections::HashMap;
 
 pub struct GPU {
     pro_que: ocl::ProQue,
+    buffers: HashMap<String, Box<dyn GenericBuffer>>,
 }
 
 struct TypedBuffer<T: ocl::OclPrm> {
@@ -15,14 +17,6 @@ pub trait GenericBuffer {
     fn get_type(&self) -> BufferType;
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
-}
-
-pub enum KernelArgument<'a> {
-    Int(i32),
-    Uint(u32),
-    Float(f32),
-    Double(f64),
-    Buffer(&'a Box<dyn GenericBuffer>),
 }
 
 impl<T: ocl::OclPrm> GenericBuffer for TypedBuffer<T> {
@@ -80,45 +74,52 @@ impl GPU {
     pub fn new(source: String) -> ocl::Result<Self> {
         Ok(GPU {
             pro_que: ocl::ProQue::builder().src(source).dims(1).build()?,
+            buffers: HashMap::new(),
         })
     }
 
     pub fn create_buffer(
         &mut self,
+        name: String,
         buffer_type: BufferType,
         length: usize,
-    ) -> ocl::Result<Box<dyn GenericBuffer>> {
-        Ok(match buffer_type {
+    ) -> ocl::Result<()> {
+        let buff: Box<dyn GenericBuffer> = match buffer_type {
             BufferType::Int => expand_upcast!(self.pro_que, i32, BufferType::Int, length),
             BufferType::Uint => expand_upcast!(self.pro_que, u32, BufferType::Uint, length),
             BufferType::Float => expand_upcast!(self.pro_que, f32, BufferType::Float, length),
             BufferType::Double => expand_upcast!(self.pro_que, f64, BufferType::Double, length),
-        })
+        };
+        self.buffers.insert(name, buff);
+        Ok(())
     }
 
-    pub fn run_kernel(&mut self, name: String, mut args: Vec<KernelArgument>) -> ocl::Result<()> {
+    pub fn run_kernel(&mut self, name: String, mut args: Vec<Arg>) -> ocl::Result<()> {
         let mut builder = self.pro_que.kernel_builder(&name[..]);
 
         for arg in args.iter_mut() {
             match arg {
-                KernelArgument::Int(v) => {
+                Arg::Int(v) => {
                     builder.arg(*v);
                 }
-                KernelArgument::Uint(v) => {
+                Arg::Uint(v) => {
                     builder.arg(*v);
                 }
-                KernelArgument::Float(v) => {
+                Arg::Float(v) => {
                     builder.arg(*v);
                 }
-                KernelArgument::Double(v) => {
+                Arg::Double(v) => {
                     builder.arg(*v);
                 }
-                KernelArgument::Buffer(buff) => match buff.get_type() {
-                    BufferType::Int => expand_downcast!(builder, buff, i32),
-                    BufferType::Uint => expand_downcast!(builder, buff, u32),
-                    BufferType::Float => expand_downcast!(builder, buff, f32),
-                    BufferType::Double => expand_downcast!(builder, buff, f64),
-                },
+                Arg::Buffer(name) => {
+                    let buff = self.buffers.get(name).unwrap();
+                    match buff.get_type() {
+                        BufferType::Int => expand_downcast!(builder, buff, i32),
+                        BufferType::Uint => expand_downcast!(builder, buff, u32),
+                        BufferType::Float => expand_downcast!(builder, buff, f32),
+                        BufferType::Double => expand_downcast!(builder, buff, f64),
+                    }
+                }
             }
         }
 
