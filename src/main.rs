@@ -1,6 +1,7 @@
 extern crate clap;
 extern crate dirs;
 extern crate git2;
+extern crate image;
 extern crate ocl;
 extern crate sha2;
 
@@ -13,10 +14,31 @@ mod parse;
 mod utils;
 
 use clap::{App, Arg, SubCommand};
+use image::ImageBuffer;
 use sha2::{Digest, Sha256};
 use std::fmt::Write;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+fn save_image_float4(w: usize, h: usize, data: Vec<u8>, path: &String) {
+    let as_float4 = unsafe {
+        std::slice::from_raw_parts(
+            data.as_ptr() as *const () as *const (f32, f32, f32, f32),
+            data.len() / std::mem::size_of::<(f32, f32, f32, f32)>(),
+        )
+    };
+    assert_eq!(as_float4.len(), w * h);
+    let img = ImageBuffer::from_fn(w as u32, h as u32, |x, y| {
+        let pix = as_float4[y as usize * w + x as usize];
+        image::Rgba([
+            (pix.0 * 255.0) as u8,
+            (pix.1 * 255.0) as u8,
+            (pix.2 * 255.0) as u8,
+            (pix.3 * 255.0) as u8,
+        ])
+    });
+    img.save(path).unwrap();
+}
 
 pub fn cache_path() -> error::ClmanResult<PathBuf> {
     let path = dirs::home_dir().unwrap().join(".clman");
@@ -155,8 +177,16 @@ pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
             } => {
                 gpu.run_kernel(run.clone(), args.clone(), *global_work_size)?;
             }
-            conf::Job::Save { save, to } => {
-                std::fs::write(to, gpu.read_buffer(save.clone())?)?;
+            conf::Job::Save { save, to, r#as } => {
+                let data = gpu.read_buffer(save.clone())?;
+                match r#as {
+                    conf::SaveType::Raw => {
+                        std::fs::write(to, data)?;
+                    }
+                    conf::SaveType::Image { x, y } => {
+                        save_image_float4(*x, *y, data, to);
+                    }
+                }
             }
         }
     }

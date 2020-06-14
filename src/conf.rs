@@ -44,6 +44,13 @@ pub enum Arg {
     Double(f64),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SaveType {
+    Raw,
+    Image { x: usize, y: usize },
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Job {
@@ -54,6 +61,7 @@ pub enum Job {
     },
     Save {
         save: String,
+        r#as: SaveType,
         to: String,
     },
 }
@@ -129,6 +137,13 @@ pub fn default() -> Config {
                     count: 1024,
                 },
             );
+            buffs.insert(
+                "img".to_string(),
+                Buffer {
+                    r#type: BufferType::Float4,
+                    count: 256 * 256,
+                },
+            );
             buffs
         },
         jobs: {
@@ -147,6 +162,22 @@ pub fn default() -> Config {
                     run: "sum".to_string(),
                     args: vec![Arg::Buffer("buff".to_string()), Arg::Uint(1024)],
                     global_work_size: 1,
+                },
+            );
+            jobs.insert(
+                "fill_img".to_string(),
+                Job::Run {
+                    run: "draw".to_string(),
+                    args: vec![Arg::Buffer("img".to_string())],
+                    global_work_size: 256 * 256,
+                },
+            );
+            jobs.insert(
+                "save_img".to_string(),
+                Job::Save {
+                    save: "img".to_string(),
+                    r#as: SaveType::Image { x: 256, y: 256 },
+                    to: "img.bmp".to_string(),
                 },
             );
             jobs
