@@ -171,12 +171,12 @@ pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
             } => {
                 gpu.run_kernel(run.clone(), args.clone(), *global_work_size)?;
             }
-            conf::Job::Save { save, to, r#as } => match r#as {
-                conf::SaveType::Raw => {
-                    std::fs::write(to, gpu.read_buffer(save.clone())?)?;
+            conf::Job::Save { save, to } => match to {
+                conf::Storage::Raw { path } => {
+                    std::fs::write(path, gpu.read_buffer(save.clone())?)?;
                 }
-                conf::SaveType::Image { x, y } => {
-                    save_image_float4(*x, *y, gpu.read_buffer(save.clone())?, to);
+                conf::Storage::Image { x, y, path } => {
+                    save_image_float4(*x, *y, gpu.read_buffer(save.clone())?, path);
                 }
             },
         }

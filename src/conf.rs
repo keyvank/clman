@@ -44,11 +44,12 @@ pub enum Arg {
     Double(f64),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum SaveType {
-    Raw,
-    Image { x: usize, y: usize },
+#[serde(tag = "type")]
+pub enum Storage {
+    Raw { path: String },
+    Image { path: String, x: usize, y: usize },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -61,8 +62,7 @@ pub enum Job {
     },
     Save {
         save: String,
-        r#as: SaveType,
-        to: String,
+        to: Storage,
     },
 }
 
@@ -176,8 +176,11 @@ pub fn default() -> Config {
                 "save_img".to_string(),
                 Job::Save {
                     save: "img".to_string(),
-                    r#as: SaveType::Image { x: 256, y: 256 },
-                    to: "img.bmp".to_string(),
+                    to: Storage::Image {
+                        x: 256,
+                        y: 256,
+                        path: "img.bmp".to_string(),
+                    },
                 },
             );
             jobs
