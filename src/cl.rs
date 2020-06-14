@@ -1,5 +1,6 @@
 use crate::conf::{Arg, BufferType};
 use ocl;
+use ocl::prm::Float4;
 use std::any::Any;
 use std::collections::HashMap;
 
@@ -118,6 +119,7 @@ impl GPU {
             BufferType::Ulong => expand_upcast!(self.pro_que, u64, BufferType::Ulong, length),
             BufferType::Float => expand_upcast!(self.pro_que, f32, BufferType::Float, length),
             BufferType::Double => expand_upcast!(self.pro_que, f64, BufferType::Double, length),
+            BufferType::Float4 => expand_upcast!(self.pro_que, Float4, BufferType::Float4, length),
         };
         self.buffers.insert(name, buff);
         Ok(())
@@ -136,6 +138,7 @@ impl GPU {
             BufferType::Ulong => expand_reader!(buff, u64),
             BufferType::Float => expand_reader!(buff, f32),
             BufferType::Double => expand_reader!(buff, f64),
+            BufferType::Float4 => expand_reader!(buff, Float4),
         })
     }
 
@@ -173,6 +176,7 @@ impl GPU {
                         BufferType::Ulong => expand_arg!(builder, buff, u64),
                         BufferType::Float => expand_arg!(builder, buff, f32),
                         BufferType::Double => expand_arg!(builder, buff, f64),
+                        BufferType::Float4 => expand_arg!(builder, buff, Float4),
                     }
                 }
             }

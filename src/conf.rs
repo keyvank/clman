@@ -71,6 +71,7 @@ pub enum BufferType {
     Ulong,
     Float,
     Double,
+    Float4,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
