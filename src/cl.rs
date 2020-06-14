@@ -135,10 +135,28 @@ impl GPU {
 
         for arg in args.iter_mut() {
             match arg {
+                Arg::Char(v) => {
+                    builder.arg(*v);
+                }
+                Arg::Uchar(v) => {
+                    builder.arg(*v);
+                }
+                Arg::Short(v) => {
+                    builder.arg(*v);
+                }
+                Arg::Ushort(v) => {
+                    builder.arg(*v);
+                }
                 Arg::Int(v) => {
                     builder.arg(*v);
                 }
                 Arg::Uint(v) => {
+                    builder.arg(*v);
+                }
+                Arg::Long(v) => {
+                    builder.arg(*v);
+                }
+                Arg::Ulong(v) => {
                     builder.arg(*v);
                 }
                 Arg::Float(v) => {

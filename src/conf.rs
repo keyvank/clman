@@ -32,10 +32,22 @@ pub enum Source {
 pub enum Arg {
     #[serde(rename = "buffer")]
     Buffer(String),
+    #[serde(rename = "char")]
+    Char(i8),
+    #[serde(rename = "uchar")]
+    Uchar(u8),
+    #[serde(rename = "short")]
+    Short(i16),
+    #[serde(rename = "ushort")]
+    Ushort(u16),
     #[serde(rename = "int")]
     Int(i32),
     #[serde(rename = "uint")]
     Uint(u32),
+    #[serde(rename = "long")]
+    Long(i64),
+    #[serde(rename = "ulong")]
+    Ulong(u64),
     #[serde(rename = "float")]
     Float(f32),
     #[serde(rename = "double")]
