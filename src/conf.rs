@@ -29,12 +29,16 @@ pub enum Source {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
 pub enum Arg {
+    #[serde(rename = "buffer")]
     Buffer(String),
+    #[serde(rename = "int")]
     Int(i32),
+    #[serde(rename = "uint")]
     Uint(u32),
+    #[serde(rename = "float")]
     Float(f32),
+    #[serde(rename = "double")]
     Double(f64),
 }
 
