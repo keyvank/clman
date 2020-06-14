@@ -75,7 +75,7 @@ macro_rules! expand_upcast {
 }
 
 macro_rules! expand_reader {
-    ($buffer:expr, $type:ident) => {{
+    ($buffer:expr, $type:ident, $target_type:ty) => {{
         let buff = &$buffer
             .as_any()
             .downcast_ref::<TypedBuffer<$type>>()
@@ -86,8 +86,8 @@ macro_rules! expand_reader {
         buff.read(&mut rd).enq()?;
         unsafe {
             std::slice::from_raw_parts(
-                rd.as_ptr() as *const () as *const u8,
-                len * std::mem::size_of::<$type>(),
+                rd.as_ptr() as *const () as *const $target_type,
+                len * std::mem::size_of::<$type>() / std::mem::size_of::<$target_type>(),
             )
             .to_vec()
         }
@@ -125,20 +125,20 @@ impl GPU {
         Ok(())
     }
 
-    pub fn read_buffer(&self, name: String) -> ocl::Result<Vec<u8>> {
+    pub fn read_buffer<T: Clone>(&self, name: String) -> ocl::Result<Vec<T>> {
         let buff = self.buffers.get(&name).unwrap();
         Ok(match buff.get_type() {
-            BufferType::Char => expand_reader!(buff, i8),
-            BufferType::Uchar => expand_reader!(buff, u8),
-            BufferType::Short => expand_reader!(buff, i16),
-            BufferType::Ushort => expand_reader!(buff, u16),
-            BufferType::Int => expand_reader!(buff, i32),
-            BufferType::Uint => expand_reader!(buff, u32),
-            BufferType::Long => expand_reader!(buff, i64),
-            BufferType::Ulong => expand_reader!(buff, u64),
-            BufferType::Float => expand_reader!(buff, f32),
-            BufferType::Double => expand_reader!(buff, f64),
-            BufferType::Float4 => expand_reader!(buff, Float4),
+            BufferType::Char => expand_reader!(buff, i8, T),
+            BufferType::Uchar => expand_reader!(buff, u8, T),
+            BufferType::Short => expand_reader!(buff, i16, T),
+            BufferType::Ushort => expand_reader!(buff, u16, T),
+            BufferType::Int => expand_reader!(buff, i32, T),
+            BufferType::Uint => expand_reader!(buff, u32, T),
+            BufferType::Long => expand_reader!(buff, i64, T),
+            BufferType::Ulong => expand_reader!(buff, u64, T),
+            BufferType::Float => expand_reader!(buff, f32, T),
+            BufferType::Double => expand_reader!(buff, f64, T),
+            BufferType::Float4 => expand_reader!(buff, Float4, T),
         })
     }
 
