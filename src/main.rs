@@ -155,6 +155,9 @@ pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
             } => {
                 gpu.run_kernel(run.clone(), args.clone(), *global_work_size)?;
             }
+            conf::Job::Save { save, to } => {
+                std::fs::write(to, gpu.read_buffer(save.clone())?)?;
+            }
         }
     }
     Ok(())

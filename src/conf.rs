@@ -46,6 +46,10 @@ pub enum Job {
         args: Vec<Arg>,
         global_work_size: usize,
     },
+    Save {
+        save: String,
+        to: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
