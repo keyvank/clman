@@ -108,8 +108,14 @@ impl GPU {
         length: usize,
     ) -> ocl::Result<()> {
         let buff: Box<dyn GenericBuffer> = match buffer_type {
+            BufferType::Char => expand_upcast!(self.pro_que, i8, BufferType::Char, length),
+            BufferType::Uchar => expand_upcast!(self.pro_que, u8, BufferType::Uchar, length),
+            BufferType::Short => expand_upcast!(self.pro_que, i16, BufferType::Short, length),
+            BufferType::Ushort => expand_upcast!(self.pro_que, u16, BufferType::Ushort, length),
             BufferType::Int => expand_upcast!(self.pro_que, i32, BufferType::Int, length),
             BufferType::Uint => expand_upcast!(self.pro_que, u32, BufferType::Uint, length),
+            BufferType::Long => expand_upcast!(self.pro_que, i64, BufferType::Long, length),
+            BufferType::Ulong => expand_upcast!(self.pro_que, u64, BufferType::Ulong, length),
             BufferType::Float => expand_upcast!(self.pro_que, f32, BufferType::Float, length),
             BufferType::Double => expand_upcast!(self.pro_que, f64, BufferType::Double, length),
         };
@@ -120,8 +126,14 @@ impl GPU {
     pub fn read_buffer(&self, name: String) -> ocl::Result<Vec<u8>> {
         let buff = self.buffers.get(&name).unwrap();
         Ok(match buff.get_type() {
-            BufferType::Uint => expand_reader!(buff, u32),
+            BufferType::Char => expand_reader!(buff, i8),
+            BufferType::Uchar => expand_reader!(buff, u8),
+            BufferType::Short => expand_reader!(buff, i16),
+            BufferType::Ushort => expand_reader!(buff, u16),
             BufferType::Int => expand_reader!(buff, i32),
+            BufferType::Uint => expand_reader!(buff, u32),
+            BufferType::Long => expand_reader!(buff, i64),
+            BufferType::Ulong => expand_reader!(buff, u64),
             BufferType::Float => expand_reader!(buff, f32),
             BufferType::Double => expand_reader!(buff, f64),
         })
@@ -151,8 +163,14 @@ impl GPU {
                 Arg::Buffer(name) => {
                     let buff = self.buffers.get(name).unwrap();
                     match buff.get_type() {
+                        BufferType::Char => expand_arg!(builder, buff, i8),
+                        BufferType::Uchar => expand_arg!(builder, buff, u8),
+                        BufferType::Short => expand_arg!(builder, buff, i16),
+                        BufferType::Ushort => expand_arg!(builder, buff, u16),
                         BufferType::Int => expand_arg!(builder, buff, i32),
                         BufferType::Uint => expand_arg!(builder, buff, u32),
+                        BufferType::Long => expand_arg!(builder, buff, i64),
+                        BufferType::Ulong => expand_arg!(builder, buff, u64),
                         BufferType::Float => expand_arg!(builder, buff, f32),
                         BufferType::Double => expand_arg!(builder, buff, f64),
                     }

@@ -61,8 +61,14 @@ pub enum Job {
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum BufferType {
+    Char,
+    Uchar,
+    Short,
+    Ushort,
     Int,
     Uint,
+    Long,
+    Ulong,
     Float,
     Double,
 }
