@@ -70,6 +70,26 @@ macro_rules! expand_upcast {
     }};
 }
 
+macro_rules! expand_reader {
+    ($buffer:expr, $type:ident) => {{
+        let buff = &$buffer
+            .as_any()
+            .downcast_ref::<TypedBuffer<$type>>()
+            .unwrap()
+            .buffer;
+        let len = buff.len();
+        let mut rd = vec![$type::default(); len];
+        buff.read(&mut rd).enq()?;
+        unsafe {
+            std::slice::from_raw_parts(
+                rd.as_ptr() as *const () as *const u8,
+                len * std::mem::size_of::<$type>(),
+            )
+            .to_vec()
+        }
+    }};
+}
+
 impl GPU {
     pub fn new(source: String) -> ocl::Result<Self> {
         Ok(GPU {
@@ -92,6 +112,16 @@ impl GPU {
         };
         self.buffers.insert(name, buff);
         Ok(())
+    }
+
+    pub fn read_buffer(&self, name: String) -> ocl::Result<Vec<u8>> {
+        let buff = self.buffers.get(&name).unwrap();
+        Ok(match buff.get_type() {
+            BufferType::Uint => expand_reader!(buff, u32),
+            BufferType::Int => expand_reader!(buff, i32),
+            BufferType::Float => expand_reader!(buff, f32),
+            BufferType::Double => expand_reader!(buff, f64),
+        })
     }
 
     pub fn run_kernel(
