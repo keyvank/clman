@@ -85,7 +85,14 @@ pub fn checksum(root: &Path, root_args: String) -> error::ClmanResult<String> {
     Ok(s)
 }
 
-pub fn clean(_root: &Path) {}
+pub fn clean(root: &Path) -> error::ClmanResult<()> {
+    fs::remove_dir_all(cache_path()?)?;
+    let packages_dir = root.join("packages");
+    if Path::exists(&packages_dir) {
+        fs::remove_dir_all(&packages_dir)?;
+    }
+    Ok(())
+}
 
 pub fn new(name: &str) -> error::ClmanResult<()> {
     let root = Path::new(name);
@@ -224,7 +231,7 @@ fn main() {
     }
 
     if let Some(_matches) = matches.subcommand_matches("clean") {
-        clean(Path::new("."));
+        clean(Path::new(".")).unwrap();
     }
 
     if let Some(_matches) = matches.subcommand_matches("list") {
