@@ -48,7 +48,10 @@ impl<T: ocl::OclPrm> TypedBuffer<T> {
     }
 }
 
-macro_rules! expand_downcast {
+macro_rules! expand_arg {
+    ($builder:expr, $v:expr) => {{
+        $builder.arg($v);
+    }};
     ($builder:expr, $buffer:expr, $actual_type:ty) => {{
         $builder.arg(
             &$buffer
@@ -135,43 +138,23 @@ impl GPU {
 
         for arg in args.iter_mut() {
             match arg {
-                Arg::Char(v) => {
-                    builder.arg(*v);
-                }
-                Arg::Uchar(v) => {
-                    builder.arg(*v);
-                }
-                Arg::Short(v) => {
-                    builder.arg(*v);
-                }
-                Arg::Ushort(v) => {
-                    builder.arg(*v);
-                }
-                Arg::Int(v) => {
-                    builder.arg(*v);
-                }
-                Arg::Uint(v) => {
-                    builder.arg(*v);
-                }
-                Arg::Long(v) => {
-                    builder.arg(*v);
-                }
-                Arg::Ulong(v) => {
-                    builder.arg(*v);
-                }
-                Arg::Float(v) => {
-                    builder.arg(*v);
-                }
-                Arg::Double(v) => {
-                    builder.arg(*v);
-                }
+                Arg::Char(v) => expand_arg!(builder, *v),
+                Arg::Uchar(v) => expand_arg!(builder, *v),
+                Arg::Short(v) => expand_arg!(builder, *v),
+                Arg::Ushort(v) => expand_arg!(builder, *v),
+                Arg::Int(v) => expand_arg!(builder, *v),
+                Arg::Uint(v) => expand_arg!(builder, *v),
+                Arg::Long(v) => expand_arg!(builder, *v),
+                Arg::Ulong(v) => expand_arg!(builder, *v),
+                Arg::Float(v) => expand_arg!(builder, *v),
+                Arg::Double(v) => expand_arg!(builder, *v),
                 Arg::Buffer(name) => {
                     let buff = self.buffers.get(name).unwrap();
                     match buff.get_type() {
-                        BufferType::Int => expand_downcast!(builder, buff, i32),
-                        BufferType::Uint => expand_downcast!(builder, buff, u32),
-                        BufferType::Float => expand_downcast!(builder, buff, f32),
-                        BufferType::Double => expand_downcast!(builder, buff, f64),
+                        BufferType::Int => expand_arg!(builder, buff, i32),
+                        BufferType::Uint => expand_arg!(builder, buff, u32),
+                        BufferType::Float => expand_arg!(builder, buff, f32),
+                        BufferType::Double => expand_arg!(builder, buff, f64),
                     }
                 }
             }
