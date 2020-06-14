@@ -29,28 +29,18 @@ pub enum Source {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Arg {
-    #[serde(rename = "buffer")]
     Buffer(String),
-    #[serde(rename = "char")]
     Char(i8),
-    #[serde(rename = "uchar")]
     Uchar(u8),
-    #[serde(rename = "short")]
     Short(i16),
-    #[serde(rename = "ushort")]
     Ushort(u16),
-    #[serde(rename = "int")]
     Int(i32),
-    #[serde(rename = "uint")]
     Uint(u32),
-    #[serde(rename = "long")]
     Long(i64),
-    #[serde(rename = "ulong")]
     Ulong(u64),
-    #[serde(rename = "float")]
     Float(f32),
-    #[serde(rename = "double")]
     Double(f64),
 }
 
@@ -69,14 +59,11 @@ pub enum Job {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum BufferType {
-    #[serde(rename = "int")]
     Int,
-    #[serde(rename = "uint")]
     Uint,
-    #[serde(rename = "float")]
     Float,
-    #[serde(rename = "double")]
     Double,
 }
 
