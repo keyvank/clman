@@ -1,0 +1,32 @@
+---
+version: 0.1.0
+
+src:
+  color.cl:
+    path: src/color.cl
+  complex.cl:
+    path: src/complex.cl
+  main.cl:
+    path: src/main.cl
+
+buffers:
+  output:
+    type: float4
+    count: 4096000
+
+jobs:
+  fill_img:
+    run: draw
+    args:
+      - buffer: output
+      - uint: 2560
+      - uint: 1600
+    global_work_size: 4096000
+
+  save_img:
+    save: output
+    to:
+      type: image
+      path: img.jpg
+      x: 2560
+      y: 1600
