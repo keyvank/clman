@@ -167,7 +167,7 @@ pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
     let src = source(root, root_args)?;
     let mut gpu = cl::GPU::new(src)?;
     for (name, buff) in conf.buffers.iter() {
-        gpu.create_buffer(name.clone(), buff.r#type, buff.count)?;
+        gpu.create_buffer(name.clone(), buff.r#type, buff.count.compute())?;
     }
     for (_, job) in conf.jobs.iter() {
         match job {
@@ -176,14 +176,19 @@ pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
                 args,
                 global_work_size,
             } => {
-                gpu.run_kernel(run.clone(), args.clone(), *global_work_size)?;
+                gpu.run_kernel(run.clone(), args.clone(), global_work_size.compute())?;
             }
             conf::Job::Save { save, to } => match to {
                 conf::Storage::Raw { path } => {
                     std::fs::write(path, gpu.read_buffer(save.clone())?)?;
                 }
                 conf::Storage::Image { x, y, path } => {
-                    save_image_float4(*x, *y, gpu.read_buffer(save.clone())?, path);
+                    save_image_float4(
+                        x.compute(),
+                        y.compute(),
+                        gpu.read_buffer(save.clone())?,
+                        path,
+                    );
                 }
             },
         }

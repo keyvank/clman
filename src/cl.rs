@@ -153,16 +153,16 @@ impl GPU {
 
         for arg in args.iter_mut() {
             match arg {
-                Arg::Char(v) => expand_arg!(builder, *v),
-                Arg::Uchar(v) => expand_arg!(builder, *v),
-                Arg::Short(v) => expand_arg!(builder, *v),
-                Arg::Ushort(v) => expand_arg!(builder, *v),
-                Arg::Int(v) => expand_arg!(builder, *v),
-                Arg::Uint(v) => expand_arg!(builder, *v),
-                Arg::Long(v) => expand_arg!(builder, *v),
-                Arg::Ulong(v) => expand_arg!(builder, *v),
-                Arg::Float(v) => expand_arg!(builder, *v),
-                Arg::Double(v) => expand_arg!(builder, *v),
+                Arg::Char(v) => expand_arg!(builder, v.compute()),
+                Arg::Uchar(v) => expand_arg!(builder, v.compute()),
+                Arg::Short(v) => expand_arg!(builder, v.compute()),
+                Arg::Ushort(v) => expand_arg!(builder, v.compute()),
+                Arg::Int(v) => expand_arg!(builder, v.compute()),
+                Arg::Uint(v) => expand_arg!(builder, v.compute()),
+                Arg::Long(v) => expand_arg!(builder, v.compute()),
+                Arg::Ulong(v) => expand_arg!(builder, v.compute()),
+                Arg::Float(v) => expand_arg!(builder, v.compute()),
+                Arg::Double(v) => expand_arg!(builder, v.compute()),
                 Arg::Buffer(name) => {
                     let buff = self.buffers.get(name).unwrap();
                     match buff.get_type() {

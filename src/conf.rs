@@ -29,27 +29,49 @@ pub enum Source {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Value<T: Default + Clone> {
+    Static(T),
+    Dynamic(String),
+}
+
+impl<T: Default + Clone> Value<T> {
+    pub fn compute(&self) -> T {
+        match self {
+            Value::Static(v) => v.clone(),
+            Value::Dynamic(_) => T::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Arg {
     Buffer(String),
-    Char(i8),
-    Uchar(u8),
-    Short(i16),
-    Ushort(u16),
-    Int(i32),
-    Uint(u32),
-    Long(i64),
-    Ulong(u64),
-    Float(f32),
-    Double(f64),
+    Char(Value<i8>),
+    Uchar(Value<u8>),
+    Short(Value<i16>),
+    Ushort(Value<u16>),
+    Int(Value<i32>),
+    Uint(Value<u32>),
+    Long(Value<i64>),
+    Ulong(Value<u64>),
+    Float(Value<f32>),
+    Double(Value<f64>),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type")]
 pub enum Storage {
-    Raw { path: String },
-    Image { path: String, x: usize, y: usize },
+    Raw {
+        path: String,
+    },
+    Image {
+        path: String,
+        x: Value<usize>,
+        y: Value<usize>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -58,7 +80,7 @@ pub enum Job {
     Run {
         run: String,
         args: Vec<Arg>,
-        global_work_size: usize,
+        global_work_size: Value<usize>,
     },
     Save {
         save: String,
@@ -85,7 +107,7 @@ pub enum BufferType {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Buffer {
     pub r#type: BufferType,
-    pub count: usize,
+    pub count: Value<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -134,14 +156,14 @@ pub fn default() -> Config {
                 "buff".to_string(),
                 Buffer {
                     r#type: BufferType::Uint,
-                    count: 1024,
+                    count: Value::Static(1024),
                 },
             );
             buffs.insert(
                 "img".to_string(),
                 Buffer {
                     r#type: BufferType::Float4,
-                    count: 256 * 256,
+                    count: Value::Static(256 * 256),
                 },
             );
             buffs
@@ -152,16 +174,19 @@ pub fn default() -> Config {
                 "fill_buffer".to_string(),
                 Job::Run {
                     run: "fill".to_string(),
-                    args: vec![Arg::Buffer("buff".to_string()), Arg::Uint(3)],
-                    global_work_size: 1024,
+                    args: vec![Arg::Buffer("buff".to_string()), Arg::Uint(Value::Static(3))],
+                    global_work_size: Value::Static(1024),
                 },
             );
             jobs.insert(
                 "calculate_sum".to_string(),
                 Job::Run {
                     run: "sum".to_string(),
-                    args: vec![Arg::Buffer("buff".to_string()), Arg::Uint(1024)],
-                    global_work_size: 1,
+                    args: vec![
+                        Arg::Buffer("buff".to_string()),
+                        Arg::Uint(Value::Static(1024)),
+                    ],
+                    global_work_size: Value::Static(1),
                 },
             );
             jobs.insert(
@@ -169,7 +194,7 @@ pub fn default() -> Config {
                 Job::Run {
                     run: "draw".to_string(),
                     args: vec![Arg::Buffer("img".to_string())],
-                    global_work_size: 256 * 256,
+                    global_work_size: Value::Static(256 * 256),
                 },
             );
             jobs.insert(
@@ -177,8 +202,8 @@ pub fn default() -> Config {
                 Job::Save {
                     save: "img".to_string(),
                     to: Storage::Image {
-                        x: 256,
-                        y: 256,
+                        x: Value::Static(256),
+                        y: Value::Static(256),
                         path: "img.bmp".to_string(),
                     },
                 },
