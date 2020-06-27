@@ -1,12 +1,42 @@
 use crate::error::ClmanResult;
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
+
+pub struct Environment {
+    pub parent: Option<Box<Environment>>,
+    pub vars: HashMap<String, String>,
+}
+
+impl Environment {
+    pub fn new() -> Self {
+        Environment {
+            parent: None,
+            vars: HashMap::new(),
+        }
+    }
+    pub fn set(&mut self, key: String, value: String) {
+        self.vars.insert(key, value);
+    }
+    pub fn get(&self, key: String) -> Option<String> {
+        match self.vars.get(&key) {
+            Some(v) => Some(v.clone()),
+            None => {
+                if let Some(ref env) = self.parent {
+                    env.get(key)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -36,7 +66,7 @@ pub enum Value<T: Default + Clone> {
 }
 
 impl<T: Default + Clone> Value<T> {
-    pub fn compute(&self) -> T {
+    pub fn compute(&self, env: &Environment) -> T {
         match self {
             Value::Static(v) => v.clone(),
             Value::Dynamic(_) => T::default(),

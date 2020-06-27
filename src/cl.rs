@@ -1,4 +1,4 @@
-use crate::conf::{Arg, BufferType};
+use crate::conf::{Arg, BufferType, Environment};
 use ocl;
 use ocl::prm::Float4;
 use std::any::Any;
@@ -144,6 +144,7 @@ impl GPU {
 
     pub fn run_kernel(
         &mut self,
+        env: &Environment,
         name: String,
         mut args: Vec<Arg>,
         global_work_size: usize,
@@ -153,16 +154,16 @@ impl GPU {
 
         for arg in args.iter_mut() {
             match arg {
-                Arg::Char(v) => expand_arg!(builder, v.compute()),
-                Arg::Uchar(v) => expand_arg!(builder, v.compute()),
-                Arg::Short(v) => expand_arg!(builder, v.compute()),
-                Arg::Ushort(v) => expand_arg!(builder, v.compute()),
-                Arg::Int(v) => expand_arg!(builder, v.compute()),
-                Arg::Uint(v) => expand_arg!(builder, v.compute()),
-                Arg::Long(v) => expand_arg!(builder, v.compute()),
-                Arg::Ulong(v) => expand_arg!(builder, v.compute()),
-                Arg::Float(v) => expand_arg!(builder, v.compute()),
-                Arg::Double(v) => expand_arg!(builder, v.compute()),
+                Arg::Char(v) => expand_arg!(builder, v.compute(env)),
+                Arg::Uchar(v) => expand_arg!(builder, v.compute(env)),
+                Arg::Short(v) => expand_arg!(builder, v.compute(env)),
+                Arg::Ushort(v) => expand_arg!(builder, v.compute(env)),
+                Arg::Int(v) => expand_arg!(builder, v.compute(env)),
+                Arg::Uint(v) => expand_arg!(builder, v.compute(env)),
+                Arg::Long(v) => expand_arg!(builder, v.compute(env)),
+                Arg::Ulong(v) => expand_arg!(builder, v.compute(env)),
+                Arg::Float(v) => expand_arg!(builder, v.compute(env)),
+                Arg::Double(v) => expand_arg!(builder, v.compute(env)),
                 Arg::Buffer(name) => {
                     let buff = self.buffers.get(name).unwrap();
                     match buff.get_type() {

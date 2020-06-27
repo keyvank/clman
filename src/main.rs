@@ -163,11 +163,12 @@ pub fn fetch(root: &Path, force: bool) -> error::ClmanResult<()> {
 }
 
 pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
+    let env = conf::Environment::new();
     let conf = conf::read_config(root)?;
     let src = source(root, root_args)?;
     let mut gpu = cl::GPU::new(src)?;
     for (name, buff) in conf.buffers.iter() {
-        gpu.create_buffer(name.clone(), buff.r#type, buff.count.compute())?;
+        gpu.create_buffer(name.clone(), buff.r#type, buff.count.compute(&env))?;
     }
     for (_, job) in conf.jobs.iter() {
         match job {
@@ -176,7 +177,12 @@ pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
                 args,
                 global_work_size,
             } => {
-                gpu.run_kernel(run.clone(), args.clone(), global_work_size.compute())?;
+                gpu.run_kernel(
+                    &env,
+                    run.clone(),
+                    args.clone(),
+                    global_work_size.compute(&env),
+                )?;
             }
             conf::Job::Save { save, to } => match to {
                 conf::Storage::Raw { path } => {
@@ -184,8 +190,8 @@ pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
                 }
                 conf::Storage::Image { x, y, path } => {
                     save_image_float4(
-                        x.compute(),
-                        y.compute(),
+                        x.compute(&env),
+                        y.compute(&env),
                         gpu.read_buffer(save.clone())?,
                         path,
                     );
