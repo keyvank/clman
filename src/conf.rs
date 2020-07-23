@@ -9,15 +9,16 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 pub const DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
+#[derive(Clone)]
 pub struct Environment {
     pub parent: Option<Box<Environment>>,
     pub vars: HashMap<String, String>,
 }
 
 impl Environment {
-    pub fn new() -> Self {
+    pub fn new(parent: Option<Environment>) -> Self {
         Environment {
-            parent: None,
+            parent: parent.map(|e| Box::new(e)),
             vars: HashMap::new(),
         }
     }
@@ -36,6 +37,17 @@ impl Environment {
             }
         }
     }
+    pub fn as_map(&self) -> HashMap<String, String> {
+        let mut ret = self.vars.clone();
+        let mut curr = self.parent.as_ref();
+        while let Some(env) = curr {
+            for (k, v) in env.vars.iter() {
+                ret.entry(k.into()).or_insert(v.into());
+            }
+            curr = env.parent.as_ref();
+        }
+        ret
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -46,30 +58,59 @@ pub enum Source {
     },
     Dockerfile {
         dockerfile: String,
-        args: Option<String>,
+        args: ValueString,
     },
     Script {
         script: String,
-        args: Option<String>,
+        args: ValueString,
     },
     Package {
         git: String,
-        args: Option<String>,
+        args: ValueString,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ValueString(pub String);
+
+impl From<&str> for ValueString {
+    fn from(s: &str) -> Self {
+        ValueString(String::from(s))
+    }
+}
+
+pub trait Computable<T> {
+    fn compute(&self, env: &Environment) -> T;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Value<T: Default + Clone> {
     Static(T),
-    Dynamic(String),
+    Dynamic(ValueString),
 }
 
-impl<T: Default + Clone> Value<T> {
-    pub fn compute(&self, env: &Environment) -> T {
+impl Computable<String> for ValueString {
+    fn compute(&self, env: &Environment) -> String {
+        let mut ret = self.0.clone();
+        for (k, v) in env.as_map().iter() {
+            ret = ret.replace(&format!("${}", k), v);
+        }
+        ret
+    }
+}
+
+impl<T: Default + Clone + std::str::FromStr> Computable<T> for Value<T>
+where
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
+    fn compute(&self, env: &Environment) -> T {
         match self {
             Value::Static(v) => v.clone(),
-            Value::Dynamic(_) => T::default(),
+            Value::Dynamic(s) => {
+                let s = s.compute(env);
+                T::from_str(&s).unwrap()
+            }
         }
     }
 }
@@ -77,7 +118,7 @@ impl<T: Default + Clone> Value<T> {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Arg {
-    Buffer(String),
+    Buffer(ValueString),
     Char(Value<i8>),
     Uchar(Value<u8>),
     Short(Value<i16>),
@@ -95,10 +136,10 @@ pub enum Arg {
 #[serde(tag = "type")]
 pub enum Storage {
     Raw {
-        path: String,
+        path: ValueString,
     },
     Image {
-        path: String,
+        path: ValueString,
         x: Value<usize>,
         y: Value<usize>,
     },
@@ -108,12 +149,12 @@ pub enum Storage {
 #[serde(untagged)]
 pub enum Job {
     Run {
-        run: String,
+        run: ValueString,
         args: Vec<Arg>,
         global_work_size: Value<usize>,
     },
     Save {
-        save: String,
+        save: ValueString,
         to: Storage,
     },
 }
@@ -168,14 +209,14 @@ pub fn default() -> Config {
             src.insert(
                 "ff.cl".to_string(),
                 Source::Package {
-                    git: "keyvank/ff-cl-gen".to_string(),
-                    args: Some("Fp 52435875175126190479447740508185965837690552500527637822603658699938581184513".to_string()),
+                    git: String::from("keyvank/ff-cl-gen"),
+                    args: ValueString::from("Fp 52435875175126190479447740508185965837690552500527637822603658699938581184513"),
                 },
             );
             src.insert(
                 "main.cl".to_string(),
                 Source::File {
-                    path: "src/main.cl".to_string(),
+                    path: String::from("src/main.cl"),
                 },
             );
             src
@@ -203,17 +244,20 @@ pub fn default() -> Config {
             jobs.insert(
                 "fill_buffer".to_string(),
                 Job::Run {
-                    run: "fill".to_string(),
-                    args: vec![Arg::Buffer("buff".to_string()), Arg::Uint(Value::Static(3))],
+                    run: ValueString::from("fill"),
+                    args: vec![
+                        Arg::Buffer(ValueString::from("buff")),
+                        Arg::Uint(Value::Static(3)),
+                    ],
                     global_work_size: Value::Static(1024),
                 },
             );
             jobs.insert(
                 "calculate_sum".to_string(),
                 Job::Run {
-                    run: "sum".to_string(),
+                    run: ValueString::from("sum"),
                     args: vec![
-                        Arg::Buffer("buff".to_string()),
+                        Arg::Buffer(ValueString::from("buff")),
                         Arg::Uint(Value::Static(1024)),
                     ],
                     global_work_size: Value::Static(1),
@@ -222,19 +266,19 @@ pub fn default() -> Config {
             jobs.insert(
                 "fill_img".to_string(),
                 Job::Run {
-                    run: "draw".to_string(),
-                    args: vec![Arg::Buffer("img".to_string())],
+                    run: ValueString::from("draw"),
+                    args: vec![Arg::Buffer(ValueString::from("img"))],
                     global_work_size: Value::Static(256 * 256),
                 },
             );
             jobs.insert(
                 "save_img".to_string(),
                 Job::Save {
-                    save: "img".to_string(),
+                    save: ValueString::from("img"),
                     to: Storage::Image {
                         x: Value::Static(256),
                         y: Value::Static(256),
-                        path: "img.bmp".to_string(),
+                        path: ValueString::from("img.bmp"),
                     },
                 },
             );

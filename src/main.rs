@@ -13,6 +13,7 @@ mod git;
 mod parse;
 mod utils;
 
+use crate::conf::{Computable, Environment};
 use clap::{App, Arg, SubCommand};
 use image::ImageBuffer;
 use sha2::{Digest, Sha256};
@@ -57,22 +58,16 @@ pub fn checksum(root: &Path, root_args: String) -> error::ClmanResult<String> {
             conf::Source::Dockerfile { dockerfile, args } => {
                 hasher.input(dockerfile.as_bytes());
                 hasher.input(fs::read(root.join(dockerfile))?);
-                if let Some(args) = args {
-                    hasher.input(args.as_bytes());
-                }
+                hasher.input(args.0.as_bytes());
             }
             conf::Source::Script { script, args } => {
                 hasher.input(script.as_bytes());
                 hasher.input(fs::read(root.join(script))?);
-                if let Some(args) = args {
-                    hasher.input(args.as_bytes());
-                }
+                hasher.input(args.0.as_bytes());
             }
             conf::Source::Package { git, args } => {
                 hasher.input(git.as_bytes());
-                if let Some(args) = args {
-                    hasher.input(args.as_bytes());
-                }
+                hasher.input(args.0.as_bytes());
             }
         }
     }
@@ -105,7 +100,7 @@ pub fn new(name: &str) -> error::ClmanResult<()> {
     Ok(())
 }
 
-pub fn source(root: &Path, root_args: String) -> error::ClmanResult<String> {
+pub fn source(env: &Environment, root: &Path, root_args: String) -> error::ClmanResult<String> {
     fetch(root, false)?;
 
     let cache_path = cache_path()?.join(checksum(root, root_args.clone())? + ".cl");
@@ -114,8 +109,14 @@ pub fn source(root: &Path, root_args: String) -> error::ClmanResult<String> {
         return Ok(fs::read_to_string(cache_path)?);
     }
 
-    let root_args = root_args.split(" ").collect::<Vec<_>>();
     let conf = conf::read_config(root)?;
+    let sub_env = {
+        let mut env = Environment::new(Some(env.clone()));
+        for (i, arg) in root_args.split(" ").enumerate() {
+            env.set(i.to_string(), arg.into());
+        }
+        env
+    };
     let mut ret = String::new();
     for (name, src) in conf.src {
         ret.push_str(
@@ -123,25 +124,28 @@ pub fn source(root: &Path, root_args: String) -> error::ClmanResult<String> {
                 conf::Source::File { path } => fs::read_to_string(&root.join(Path::new(&path)))?,
                 conf::Source::Dockerfile { dockerfile, args } => {
                     println!("Generating {}...", name);
-                    let mut subs = args.unwrap_or(String::new());
-                    for i in 0..root_args.len() {
-                        subs = subs.replace(&format!("${}", i + 1), root_args[i]);
-                    }
-                    docker::gen(root, dockerfile, subs)?
+                    //let mut subs = args.unwrap_or(String::new());
+                    //for i in 0..root_args.len() {
+                    //    subs = subs.replace(&format!("${}", i + 1), root_args[i]);
+                    //}
+                    docker::gen(root, dockerfile, args.compute(&sub_env))?
                 }
                 conf::Source::Script { script, args } => {
                     println!("Generating {}...", name);
-                    let mut subs = args.unwrap_or(String::new());
-                    for i in 0..root_args.len() {
-                        subs = subs.replace(&format!("${}", i + 1), root_args[i]);
-                    }
+                    //let mut subs = args.unwrap_or(String::new());
+                    //for i in 0..root_args.len() {
+                    //    subs = subs.replace(&format!("${}", i + 1), root_args[i]);
+                    //}
                     utils::get_output(
-                        &(root.join(script).to_str().unwrap().to_string() + " " + &subs[..]),
+                        &(root.join(script).to_str().unwrap().to_string()
+                            + " "
+                            + &args.compute(&sub_env)),
                     )?
                 }
                 conf::Source::Package { git, args } => source(
+                    env,
                     &root.join("packages").join(utils::repo_name(&git)),
-                    args.unwrap_or(String::new()),
+                    args.compute(&sub_env),
                 )?,
             }[..],
         );
@@ -162,10 +166,9 @@ pub fn fetch(root: &Path, force: bool) -> error::ClmanResult<()> {
     Ok(())
 }
 
-pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
-    let env = conf::Environment::new();
+pub fn run(env: &Environment, root: &Path, root_args: String) -> error::ClmanResult<()> {
     let conf = conf::read_config(root)?;
-    let src = source(root, root_args)?;
+    let src = source(env, root, root_args)?;
     let mut gpu = cl::GPU::new(src)?;
     for (name, buff) in conf.buffers.iter() {
         gpu.create_buffer(name.clone(), buff.r#type, buff.count.compute(&env))?;
@@ -179,21 +182,21 @@ pub fn run(root: &Path, root_args: String) -> error::ClmanResult<()> {
             } => {
                 gpu.run_kernel(
                     &env,
-                    run.clone(),
+                    run.compute(&env),
                     args.clone(),
                     global_work_size.compute(&env),
                 )?;
             }
             conf::Job::Save { save, to } => match to {
                 conf::Storage::Raw { path } => {
-                    std::fs::write(path, gpu.read_buffer(save.clone())?)?;
+                    std::fs::write(&path.compute(&env), gpu.read_buffer(save.compute(&env))?)?;
                 }
                 conf::Storage::Image { x, y, path } => {
                     save_image_float4(
                         x.compute(&env),
                         y.compute(&env),
-                        gpu.read_buffer(save.clone())?,
-                        path,
+                        gpu.read_buffer(save.compute(&env))?,
+                        &path.compute(&env),
                     );
                 }
             },
@@ -224,17 +227,19 @@ fn main() {
         .subcommand(SubCommand::with_name("list").about("List available functions"))
         .get_matches();
 
+    let env = conf::Environment::new(None);
+
     if let Some(matches) = matches.subcommand_matches("new") {
         let name = matches.value_of("NAME").unwrap();
         new(name).unwrap();
     }
 
     if let Some(_matches) = matches.subcommand_matches("run") {
-        run(Path::new("."), String::new()).unwrap();
+        run(&env, Path::new("."), String::new()).unwrap();
     }
 
     if let Some(_matches) = matches.subcommand_matches("gen") {
-        println!("{}", source(Path::new("."), String::new()).unwrap());
+        println!("{}", source(&env, Path::new("."), String::new()).unwrap());
     }
 
     if let Some(_matches) = matches.subcommand_matches("fetch") {
@@ -246,7 +251,7 @@ fn main() {
     }
 
     if let Some(_matches) = matches.subcommand_matches("list") {
-        for f in parse::list_functions(source(Path::new("."), String::new()).unwrap()) {
+        for f in parse::list_functions(source(&env, Path::new("."), String::new()).unwrap()) {
             println!("{}", f);
         }
     }

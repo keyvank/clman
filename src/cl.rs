@@ -1,4 +1,4 @@
-use crate::conf::{Arg, BufferType, Environment};
+use crate::conf::{Arg, BufferType, Computable, Environment};
 use ocl;
 use ocl::prm::Float4;
 use std::any::Any;
@@ -165,7 +165,7 @@ impl GPU {
                 Arg::Float(v) => expand_arg!(builder, v.compute(env)),
                 Arg::Double(v) => expand_arg!(builder, v.compute(env)),
                 Arg::Buffer(name) => {
-                    let buff = self.buffers.get(name).unwrap();
+                    let buff = self.buffers.get(&name.compute(env)).unwrap();
                     match buff.get_type() {
                         BufferType::Char => expand_arg!(builder, buff, i8),
                         BufferType::Uchar => expand_arg!(builder, buff, u8),
