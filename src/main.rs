@@ -16,6 +16,7 @@ mod utils;
 use crate::conf::{Computable, Environment};
 use clap::{App, Arg, SubCommand};
 use image::ImageBuffer;
+use itertools::*;
 use sha2::{Digest, Sha256};
 use std::fmt::Write;
 use std::fs;
@@ -168,7 +169,13 @@ pub fn fetch(root: &Path, force: bool) -> error::ClmanResult<()> {
 
 pub fn run(env: &Environment, root: &Path, root_args: String) -> error::ClmanResult<()> {
     let conf = conf::read_config(root)?;
-    let src = source(env, root, root_args)?;
+    let src = source(env, root, root_args.clone())?;
+
+    let mut env = env.clone();
+    for (i, arg) in root_args.split(" ").enumerate() {
+        env.set(i.to_string(), arg.into());
+    }
+
     let mut gpu = cl::GPU::new(src)?;
     for (name, buff) in conf.buffers.iter() {
         gpu.create_buffer(name.clone(), buff.r#type, buff.count.compute(&env))?;
@@ -220,7 +227,11 @@ fn main() {
                         .index(1),
                 ),
         )
-        .subcommand(SubCommand::with_name("run").about("Run the project in current directory"))
+        .subcommand(
+            SubCommand::with_name("run")
+                .arg(Arg::with_name("ARGS").min_values(1))
+                .about("Run the project in current directory"),
+        )
         .subcommand(SubCommand::with_name("gen").about("Generate final OpenCL source code"))
         .subcommand(SubCommand::with_name("fetch").about("Fetch git dependencies"))
         .subcommand(SubCommand::with_name("clean").about("Clean cache"))
@@ -234,8 +245,12 @@ fn main() {
         new(name).unwrap();
     }
 
-    if let Some(_matches) = matches.subcommand_matches("run") {
-        run(&env, Path::new("."), String::new()).unwrap();
+    if let Some(matches) = matches.subcommand_matches("run") {
+        let args = matches
+            .values_of("ARGS")
+            .map(|mut vals| vals.join(" "))
+            .unwrap_or_default();
+        run(&env, Path::new("."), args.into()).unwrap();
     }
 
     if let Some(_matches) = matches.subcommand_matches("gen") {
