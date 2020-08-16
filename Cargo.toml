@@ -6,7 +6,7 @@ description = "OpenCL Package Manager"
 edition = "2018"
 
 [dependencies]
-ocl = "0.19"
+rust-gpu-tools = "0.1.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
 clap = "2.33.1"

@@ -9,12 +9,12 @@ pub enum ClmanError {
     #[error("Command Error: {stderr:?}")]
     Command { stderr: String },
     #[error("GPU Error: {0}")]
-    Gpu(ocl::Error),
+    Gpu(rust_gpu_tools::opencl::GPUError),
 }
 pub type ClmanResult<T> = std::result::Result<T, ClmanError>;
 
-impl From<ocl::Error> for ClmanError {
-    fn from(err: ocl::Error) -> Self {
+impl From<rust_gpu_tools::opencl::GPUError> for ClmanError {
+    fn from(err: rust_gpu_tools::opencl::GPUError) -> Self {
         Self::Gpu(err)
     }
 }

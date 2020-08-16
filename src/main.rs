@@ -2,7 +2,7 @@ extern crate clap;
 extern crate dirs;
 extern crate git2;
 extern crate image;
-extern crate ocl;
+extern crate rust_gpu_tools;
 extern crate sha2;
 
 mod cl;

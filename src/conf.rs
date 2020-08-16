@@ -175,6 +175,24 @@ pub enum BufferType {
     Float4,
 }
 
+impl BufferType {
+    pub fn size_of(&self) -> usize {
+        match self {
+            Self::Char => 1,
+            Self::Uchar => 1,
+            Self::Short => 2,
+            Self::Ushort => 2,
+            Self::Int => 4,
+            Self::Uint => 4,
+            Self::Long => 8,
+            Self::Ulong => 8,
+            Self::Float => 4,
+            Self::Double => 8,
+            Self::Float4 => 16,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Buffer {
     pub r#type: BufferType,
