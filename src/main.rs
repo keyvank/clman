@@ -49,6 +49,11 @@ pub fn checksum(root: &Path, root_args: String) -> error::ClmanResult<String> {
     let mut hasher = Sha256::new();
     hasher.input(root_args.as_bytes());
 
+    for (k, v) in conf.define {
+        hasher.input(k.as_bytes());
+        hasher.input(v.0.as_bytes());
+    }
+
     for (name, src) in conf.src {
         hasher.input(name.as_bytes());
         match src {
@@ -119,6 +124,9 @@ pub fn source(env: &Environment, root: &Path, root_args: String) -> error::Clman
         env
     };
     let mut ret = String::new();
+    for (k, v) in conf.define.iter() {
+        ret.push_str(&format!("#define {} ({})\n", k, v.compute(&sub_env)));
+    }
     for (name, src) in conf.src {
         ret.push_str(
             &match src {

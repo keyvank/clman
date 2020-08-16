@@ -206,6 +206,8 @@ pub struct Config {
     #[serde(default)]
     pub buffers: LinkedHashMap<String, Buffer>,
     #[serde(default)]
+    pub define: LinkedHashMap<String, ValueString>,
+    #[serde(default)]
     pub jobs: LinkedHashMap<String, Job>,
 }
 
@@ -222,6 +224,7 @@ pub fn read_config(root: &Path) -> ClmanResult<Config> {
 pub fn default() -> Config {
     Config {
         version: VERSION.to_string(),
+        define: Default::default(),
         src: {
             let mut src = LinkedHashMap::<String, Source>::new();
             src.insert(
