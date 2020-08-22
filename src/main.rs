@@ -57,6 +57,9 @@ pub fn checksum(root: &Path, root_args: String) -> error::ClmanResult<String> {
     for (name, src) in conf.src {
         hasher.input(name.as_bytes());
         match src {
+            conf::Source::Code { code } => {
+                hasher.input(code.0.as_bytes());
+            }
             conf::Source::File { path } => {
                 hasher.input(path.as_bytes());
                 hasher.input(fs::read(root.join(path))?);
@@ -121,36 +124,26 @@ pub fn source(env: &Environment, root: &Path, root_args: String) -> error::Clman
         for (i, arg) in root_args.split(" ").enumerate() {
             env.set(i.to_string(), arg.into());
         }
+        for (k, v) in conf.define.iter() {
+            env.set(k.to_string(), v.compute(&env));
+        }
         env
     };
+
     let mut ret = String::new();
-    for (k, v) in conf.define.iter() {
-        ret.push_str(&format!("#define {} ({})\n", k, v.compute(&sub_env)));
-    }
     for (name, src) in conf.src {
         ret.push_str(
             &match src {
+                conf::Source::Code { code } => format!("\n{}\n", code.compute(&sub_env)),
                 conf::Source::File { path } => fs::read_to_string(&root.join(Path::new(&path)))?,
                 conf::Source::Dockerfile { dockerfile, args } => {
-                    println!("Generating {}...", name);
-                    //let mut subs = args.unwrap_or(String::new());
-                    //for i in 0..root_args.len() {
-                    //    subs = subs.replace(&format!("${}", i + 1), root_args[i]);
-                    //}
                     docker::gen(root, dockerfile, args.compute(&sub_env))?
                 }
-                conf::Source::Script { script, args } => {
-                    println!("Generating {}...", name);
-                    //let mut subs = args.unwrap_or(String::new());
-                    //for i in 0..root_args.len() {
-                    //    subs = subs.replace(&format!("${}", i + 1), root_args[i]);
-                    //}
-                    utils::get_output(
-                        &(root.join(script).to_str().unwrap().to_string()
-                            + " "
-                            + &args.compute(&sub_env)),
-                    )?
-                }
+                conf::Source::Script { script, args } => utils::get_output(
+                    &(root.join(script).to_str().unwrap().to_string()
+                        + " "
+                        + &args.compute(&sub_env)),
+                )?,
                 conf::Source::Package { git, args } => source(
                     env,
                     &root.join("packages").join(utils::repo_name(&git)),
@@ -182,6 +175,9 @@ pub fn run(env: &Environment, root: &Path, root_args: String) -> error::ClmanRes
     let mut env = env.clone();
     for (i, arg) in root_args.split(" ").enumerate() {
         env.set(i.to_string(), arg.into());
+    }
+    for (k, v) in conf.define.iter() {
+        env.set(k.to_string(), v.compute(&env));
     }
 
     let mut gpu = cl::GPU::new(src)?;

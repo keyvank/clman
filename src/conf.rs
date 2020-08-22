@@ -53,6 +53,9 @@ impl Environment {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Source {
+    Code {
+        code: ValueString,
+    },
     File {
         path: String,
     },
@@ -95,6 +98,13 @@ impl Computable<String> for ValueString {
         let mut ret = self.0.clone();
         for (k, v) in env.as_map().iter() {
             ret = ret.replace(&format!("${}", k), v);
+        }
+        if ret.starts_with("$((") && ret.ends_with("))") {
+            ret = ret[3..ret.len() - 2].into();
+            ret = mexprp::eval::<f64>(&ret)
+                .unwrap()
+                .unwrap_single()
+                .to_string();
         }
         ret
     }

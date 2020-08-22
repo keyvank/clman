@@ -1,7 +1,16 @@
 ---
 version: 0.1.0
 
+define:
+  JULIA_REAL: $0
+  JULIA_IMAG: $1
+  WIDTH: 2560
+  HEIGHT: 1600
+  WORK_SIZE: $(($WIDTH * $HEIGHT))
+
 src:
+  define.cl:
+    code: "#define JULIA_C (float2)($JULIA_REAL, $JULIA_IMAG)"
   color.cl:
     path: src/color.cl
   complex.cl:
@@ -12,25 +21,21 @@ src:
 buffers:
   output:
     type: float4
-    count: 4096000
-
-define:
-  JULIA_REAL: $0
-  JULIA_IMAG: $1
+    count: $WORK_SIZE
 
 jobs:
   fill_img:
     run: draw
     args:
       - buffer: output
-      - uint: 2560
-      - uint: 1600
-    global_work_size: 4096000
+      - uint: $WIDTH
+      - uint: $HEIGHT
+    global_work_size: $WORK_SIZE
 
   save_img:
     save: output
     to:
       type: image
       path: img.jpg
-      x: 2560
-      y: 1600
+      x: $WIDTH
+      y: $HEIGHT

@@ -1,4 +1,3 @@
-#define JULIA_C (float2)(JULIA_REAL, JULIA_IMAG)
 #define SAMPLES (10)
 #define LIMIT (10000)
 #define HUE_JUMP (7)
