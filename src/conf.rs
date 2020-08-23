@@ -238,13 +238,6 @@ pub fn default() -> Config {
         src: {
             let mut src = LinkedHashMap::<String, Source>::new();
             src.insert(
-                "ff.cl".to_string(),
-                Source::Package {
-                    git: String::from("keyvank/ff-cl-gen"),
-                    args: ValueString::from("Fp 52435875175126190479447740508185965837690552500527637822603658699938581184513"),
-                },
-            );
-            src.insert(
                 "main.cl".to_string(),
                 Source::File {
                     path: String::from("src/main.cl"),
@@ -252,65 +245,15 @@ pub fn default() -> Config {
             );
             src
         },
-        buffers: {
-            let mut buffs = LinkedHashMap::<String, Buffer>::new();
-            buffs.insert(
-                "buff".to_string(),
-                Buffer {
-                    r#type: BufferType::Uint,
-                    count: Value::Static(1024),
-                },
-            );
-            buffs.insert(
-                "img".to_string(),
-                Buffer {
-                    r#type: BufferType::Float4,
-                    count: Value::Static(256 * 256),
-                },
-            );
-            buffs
-        },
+        buffers: Default::default(),
         jobs: {
             let mut jobs = LinkedHashMap::<String, Job>::new();
             jobs.insert(
-                "fill_buffer".to_string(),
+                "main".to_string(),
                 Job::Run {
-                    run: ValueString::from("fill"),
-                    args: vec![
-                        Arg::Buffer(ValueString::from("buff")),
-                        Arg::Uint(Value::Static(3)),
-                    ],
-                    global_work_size: Value::Static(1024),
-                },
-            );
-            jobs.insert(
-                "calculate_sum".to_string(),
-                Job::Run {
-                    run: ValueString::from("sum"),
-                    args: vec![
-                        Arg::Buffer(ValueString::from("buff")),
-                        Arg::Uint(Value::Static(1024)),
-                    ],
+                    run: ValueString::from("hello_world"),
+                    args: vec![],
                     global_work_size: Value::Static(1),
-                },
-            );
-            jobs.insert(
-                "fill_img".to_string(),
-                Job::Run {
-                    run: ValueString::from("draw"),
-                    args: vec![Arg::Buffer(ValueString::from("img"))],
-                    global_work_size: Value::Static(256 * 256),
-                },
-            );
-            jobs.insert(
-                "save_img".to_string(),
-                Job::Save {
-                    save: ValueString::from("img"),
-                    to: Storage::Image {
-                        x: Value::Static(256),
-                        y: Value::Static(256),
-                        path: ValueString::from("img.bmp"),
-                    },
                 },
             );
             jobs
