@@ -1,0 +1,39 @@
+---
+version: 0.1.0
+
+define:
+  WIDTH: 1600
+  HEIGHT: 1600
+  WORK_SIZE: $(($WIDTH * $HEIGHT))
+
+src:
+  defs.cl:
+    path: src/defs.cl
+  ray.cl:
+    path: src/ray.cl
+  camera.cl:
+    path: src/camera.cl
+  main.cl:
+    path: src/main.cl
+
+buffers:
+  output:
+    type: float4
+    count: $WORK_SIZE
+
+jobs:
+  render:
+    run: render
+    args:
+      - uint: $WIDTH
+      - uint: $HEIGHT
+      - buffer: output
+    global_work_size: $WORK_SIZE
+
+  save:
+    save: output
+    to:
+      type: image
+      path: output.jpg
+      x: $WIDTH
+      y: $HEIGHT
